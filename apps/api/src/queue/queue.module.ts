@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
 
@@ -11,6 +11,10 @@ export const QUEUES = {
   retention: "retention-sweep",
 } as const;
 
+// Global so the registered queue tokens are injectable from any feature module
+// (InvitationsService, AssignmentsService, RosterController, the processors, …)
+// without each importing QueueModule. Without this the app cannot boot.
+@Global()
 @Module({
   imports: [
     BullModule.forRootAsync({
