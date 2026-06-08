@@ -10,5 +10,12 @@ export default defineConfig({
     alias: {
       "@src": path.resolve(__dirname, "./src"),
     },
+    // Coverage plumbing (LMS-H2). The 60% floor on the service layer is gated
+    // with LMS-C2, once real service tests exist — see LMS_PRE_LAUNCH_AUDIT.md.
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.service.ts"],
+    },
   },
 });
