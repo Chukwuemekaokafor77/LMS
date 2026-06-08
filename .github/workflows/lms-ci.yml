@@ -44,10 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here — the root package.json `packageManager: pnpm@9.12.0`
+      # pin is the single source of truth. Passing both makes action-setup@v4
+      # fail with ERR_PNPM_BAD_PM_VERSION.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
