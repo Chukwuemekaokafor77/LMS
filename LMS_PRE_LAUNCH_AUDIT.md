@@ -1,0 +1,197 @@
+# Maple Care LMS — As-Built Reconciliation & Hardening Plan
+
+**Status:** 🟡 Reconciliation done (2026-06-08). The LMS is **further along than ROADMAP Part A claims** — most of LMS Phase 1 (validation, PHI-interceptor default-on, CI, Dockerfiles, webhook signature verification) is already implemented in code, plus chunks of Phase 2/3 (onboarding, roster import, materialization, cert PDFs, reports/export, retention). **But the safety infrastructure is scaffolded, not verified:** the tenant-isolation guardrail is broken-by-design, its flagship test proves nothing, and there is ~zero integration coverage behind any of it. This doc is the single source of truth for closing that gap before the LMS can be put in front of a PHI-trusting operator.
+
+> **⚠️ This is a paused product.** ElderCare is the active focus (see `ROADMAP.md` Part B, in the separate `psw` repo). This plan exists so that (a) the ROADMAP stops misrepresenting "paused" as "untouched," and (b) when an LMS resume trigger fires, the first engineer in has a precise, code-verified punch list instead of re-deriving the state. **Do not start this work** until a resume trigger fires — but keep this doc honest if the code changes.
+
+**Repo:** `C:\Users\emekamichael\LMS` (separate from `psw`). All file paths below are relative to that repo root.
+**Audit scope:** Full `apps/api/src` (line-by-line on all PHI/tenant/billing/webhook paths), `apps/api/prisma/schema.prisma`, CI, Dockerfiles, env. `apps/web` structure-level only.
+**Last updated:** 2026-06-08
+**Owner:** _(assign when a resume trigger fires)_
+
+Legend — Severity: 🔴 CRITICAL (blocks any PHI pilot) · 🟠 HIGH (fix before first paid operator) · 🟡 MEDIUM (first patch) · 🔵 LOW (backlog).
+Status: `[ ]` open · `[~]` partial / built-but-unverified · `[!]` built-but-broken · `[x]` done + verified.
+
+---
+
+## How to use this document
+
+1. The ROADMAP Phase 1 checkboxes are **superseded by this doc.** The "Roadmap reconciliation" table below maps each Phase 1 line to its true as-built state; the findings sections carry the work.
+2. Resolve **CRITICAL** before any real PHI touches the system — these are the unverified cross-tenant-leak surface, which is the single biggest commercial + legal risk for a multi-tenant LMS.
+3. Resolve **HIGH** before the first paying operator.
+4. MEDIUM/LOW are first-patch / backlog.
+5. Work top-down. Each finding has a stable ID (`LMS-C1`, `LMS-H1`, …), location, root cause, fix, verification, effort, and a status box. Keep the boxes flipped as work lands — do not repeat the ROADMAP's status-drift mistake.
+
+---
+
+## What is already solid (do not regress)
+
+These were verified by code-read this session and are genuinely good — the point of the hardening work is to *prove* them with tests, not rebuild them:
+
+- **Application-layer tenant scoping is careful.** Admin/list paths filter `orgId` explicitly ([staff.service.ts:17](apps/api/src/staff/staff.service.ts)); by-id reads do a post-fetch ownership check (`if (!s || s.orgId !== actor.orgId) throw NotFound`, plus site/self gates — [staff.service.ts:50](apps/api/src/staff/staff.service.ts)); certificate download checks owner-or-same-org-admin ([certificates.controller.ts:38](apps/api/src/certificates/certificates.controller.ts)). No IDOR found in the reviewed paths.
+- **Webhook signature verification is implemented for all three providers** — Stripe (`constructEvent` over `rawBody` — [billing.controller.ts:64](apps/api/src/billing/billing.controller.ts)), Mux (`verifySignature` — [mux.service.ts:30](apps/api/src/video/mux.service.ts)), Clerk (svix `verify` — [clerk-webhook.controller.ts](apps/api/src/auth/clerk-webhook.controller.ts)). `rawBody: true` is set in [main.ts:11](apps/api/src/main.ts).
+  - **⚠️ Correction (2026-06-08):** the Mux call referenced a non-existent `Mux.webhooks` **static** (the v9 SDK exposes `verifySignature` on the client *instance*), so it never compiled and the Mux path was never actually exercised. Fixed in **LMS-H3**. The Stripe/Clerk verifications were sound; all three still need the integration tests in LMS-C2.
+- **PHI access logging is default-on.** The interceptor is a global `APP_INTERCEPTOR` ([audit.module.ts:12](apps/api/src/audit/audit.module.ts)) and *fails loud* in dev when a handler is missing `@PhiAccess`/`@SkipPhiAccess` ([phi-access.interceptor.ts:43](apps/api/src/audit/phi-access.interceptor.ts)).
+- **Global request validation is on** — `ValidationPipe({ whitelist, forbidNonWhitelisted, transform })` ([main.ts:14](apps/api/src/main.ts)).
+- **Global Clerk auth guard** ([auth.module.ts:16](apps/api/src/auth/auth.module.ts)) with a `@Public()` opt-out for webhooks/health.
+- **Schema denormalizes `orgId` onto every PHI table** (`Staff`, `Assignment`, `Attempt`, `Certificate`, `RosterImport` all carry `orgId` + `@@index` — [schema.prisma](apps/api/prisma/schema.prisma)). This is what makes a *correct* guardrail cheap to build (see LMS-H1).
+- **`.env` is gitignored and not tracked** — no committed-secret leak (see LMS-M1 for the residual).
+
+---
+
+# CRITICAL — block any PHI pilot
+
+### LMS-C1 · The "cross-tenant isolation" test proves nothing 🔴
+- **Where:** [apps/api/test/tenant-isolation.e2e-spec.ts](apps/api/test/tenant-isolation.e2e-spec.ts)
+- **Root cause:** The roadmap calls real cross-tenant tests *"the #1 priority — write these before any other test."* The file that exists mocks `client._executeRequest` to return `[]` and only asserts whether the guardrail extension throws. It **never seeds Org A + Org B and never proves Org A cannot read Org B's row.** Two of its four cases assert *inside a `catch` block*, so when no error is thrown they pass **vacuously** (green for the wrong reason). The headline safety net is illusory.
+- **Fix:**
+  1. Stand up a real throwaway Postgres for tests (Testcontainers, or the CI `services:` block from LMS-H2) and run `prisma migrate deploy` against it in global setup.
+  2. Seed two orgs (A, B) each with a site, staff, module, assignment, attempt, certificate, roster import.
+  3. For **every** PHI-reading service/controller path (`me` assignments, `staff` list+getOne, `certificates` download, `reports` fetch/csv/pdf, `roster` get, `video` playback gate, `assignments` submit), authenticate as an Org-A actor and assert Org-B rows are invisible (empty list) or 404 (by-id) — and the reverse.
+  4. Replace the vacuous `try/catch` assertions with direct `await expect(...).resolves/.rejects` form so a non-throw can't pass silently.
+- **Verify:** Suite seeds 2 orgs; each PHI path has an A-cannot-see-B case; mutating tests confirm an Org-A token cannot update/delete an Org-B row. Flip one app-layer `orgId` check to prove a test actually fails (mutation check), then revert.
+- **Effort:** L. **Status:** `[ ]`
+
+### LMS-C2 · ~Zero integration coverage on the PHI / billing / webhook surface 🔴
+- **Where:** `apps/api` — only 3 spec files exist (`assignments.service.spec.ts`, `certificate.processor.spec.ts`, the mocked guardrail test). All mock Prisma; none hit a DB or HTTP layer.
+- **Root cause:** Roadmap Phase 1 targets are unmet: cert-issuance idempotency, attempt scoring against real data, materialization cadence/expiry/grace math, and **signature-verified webhook handlers** (Stripe/Mux/Clerk) all lack tests; "≥60% service-layer coverage" is nowhere close. CI runs `vitest` but spins up no Postgres/Redis, so nothing that touches a real DB *can* be integration-tested today (see LMS-H2).
+- **Fix:** On the LMS-C1 real-DB harness, add:
+  1. **Certificate idempotency** — run `certificate.processor` twice for one assignment → exactly one `Certificate` row, stable `sha256`.
+  2. **Attempt scoring** — promote the mocked `assignments.service.spec` cases to real-DB (single/multi/true-false; pass/fail boundary at `passMark`).
+  3. **Materialization** — `materialize.processor` produces the right assignments for a role×site×jurisdiction `RequiredTraining` with correct `dueAt`/expiry/grace.
+  4. **Webhooks** — POST a body with a bad signature → 400; with a valid signature → idempotent upsert (Stripe subscription; Mux status transition `preparing→ready`; Clerk org/user lifecycle). Use each SDK's test-signing helper.
+  5. Wire `vitest run --coverage` and set a CI floor of 60% on `src/**/*.service.ts`.
+- **Verify:** `pnpm --filter @maple-care/api test` green against a real DB in CI; coverage gate enforced; replaying any webhook is a no-op.
+- **Effort:** L. **Status:** `[ ]`
+
+---
+
+# HIGH — fix before first paid operator
+
+### LMS-H1 · Tenant-isolation guardrail is broken-by-design 🟠
+- **Where:** [apps/api/src/prisma/tenant-isolation.extension.ts](apps/api/src/prisma/tenant-isolation.extension.ts)
+- **Root cause:** The extension requires a literal top-level `orgId` in the `where` clause of any read/write on a PHI model, else it throws in dev and `console.error`s in prod. Three defects:
+  1. **Throws on legitimate `findUnique`.** Prisma's `findUnique.where` accepts only *unique* fields; `orgId` isn't unique, so `findUnique({ where: { id, orgId } })` is a type error — the rule is unsatisfiable. Yet ~15 `findUnique({ where: { id } })` calls on PHI models exist ([certificates.controller.ts:30](apps/api/src/certificates/certificates.controller.ts), [staff.service.ts:35](apps/api/src/staff/staff.service.ts), email/roster/onboarding/video/materialize). Each throws in dev/test (`NODE_ENV !== 'production'`).
+  2. **Throws on valid relation/`staffId` scoping.** [me.controller.ts:37](apps/api/src/me/me.controller.ts) (`findMany` by `staffId`), [video.service.ts:72](apps/api/src/video/video.service.ts) (`findFirst` by `staffId`), and the retention `updateMany` scoped via `assignment.staff` ([retention.processor.ts:83](apps/api/src/retention/retention.processor.ts)) are correctly isolated but lack a top-level `orgId` → tripped.
+  3. **Prod no-op + value-blind.** In prod it only logs, so it provides zero enforcement where it matters; and `"orgId" in where` is true even for `where: { orgId: undefined }`, so it's trivially bypassable.
+  Net: simultaneously too strict (dev landmine) and useless (prod). It can't actually be running in dev today or most PHI endpoints would 500 — which means it's giving false confidence.
+- **Fix:** Replace the "assert orgId is present" design with **request-scoped orgId injection**:
+  1. Add an `AsyncLocalStorage<{ orgId: string }>` populated by the Clerk guard / `CurrentStaff` resolver.
+  2. Prisma client extension that, for PHI models, *injects* `where.orgId = ctx.orgId` (and `data.orgId` on create) instead of asserting it — so isolation is automatic and `findUnique`-by-id becomes a guarded `findFirst({ where: { id, orgId } })` (or wrap reads to enforce orgId post-fetch where a true unique lookup is needed).
+  3. For legitimate cross-org system jobs (retention sweep), expose an explicit `runAsSystem()` escape that sets a sentinel context — so cross-org access is *opt-in and greppable*, not an accidental prod no-op.
+  4. Keep "throw in dev/test" for a genuinely missing context; in prod, fail-closed (throw) rather than log-and-pass for a missing org context — a 500 is safer than a cross-tenant leak.
+- **Verify:** LMS-C1 suite passes with the new extension active (no `SKIP_*` env); a PHI query with no request context throws in *all* envs; retention sweep still processes cross-org under `runAsSystem()`; `where: { orgId: undefined }` no longer slips through.
+- **Effort:** M. **Status:** `[!]`
+
+### LMS-H2 · CI is missing the drift gate, lint, typecheck, and DB services 🟠
+- **Where:** [.github/workflows/lms-ci.yml](.github/workflows/lms-ci.yml)
+- **Root cause:** vs. the roadmap's own spec (`install → typecheck → lint → test → prisma migrate diff --exit-code`), the workflow: comments out lint (`# pnpm lint`), has no standalone typecheck (only `build`), has **no `prisma migrate diff --exit-code` shadow-DB drift gate**, and spins up **no Postgres/Redis** (so LMS-C1/C2 integration tests can't run in CI). `prisma validate`/`format` don't catch schema-vs-migration drift.
+- **Fix:**
+  1. Add a `services:` block (postgres:16, redis:7) with health checks; set `DATABASE_URL`/`REDIS_URL` for the test job; run `prisma migrate deploy` before tests.
+  2. Add `pnpm --filter @maple-care/api exec prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --exit-code` (fails on uncommitted schema drift).
+  3. Re-enable lint (configure ESLint first) and add an explicit `typecheck` step (`tsc --noEmit` for api + web).
+  4. Gate coverage (LMS-C2) at 60% on the service layer.
+- **Verify:** A PR that edits `schema.prisma` without a migration fails CI; lint + typecheck run; integration tests run against the service DBs.
+- **Effort:** M. **Status:** `[~]`
+
+### LMS-H3 · The API does not type-check or build 🟠
+- **Where:** `apps/api/src` — all 12 PHI controllers, [video/mux.service.ts:31](apps/api/src/video/mux.service.ts), [billing/stripe.service.ts:15](apps/api/src/billing/stripe.service.ts), [health/health.controller.ts:25](apps/api/src/health/health.controller.ts), [auth/clerk.service.ts:28](apps/api/src/auth/clerk.service.ts), and the `assignments`/`onboarding` services.
+- **Root cause:** Discovered while wiring the LMS-H2 typecheck/build gate: `tsc --noEmit` **and** `nest build` both fail with **17 errors** on the committed tree. CI never caught it — the repo had no git history until 2026-06-08, and the pre-existing `Build API` step (which `nest build` runs through `tsc`) was therefore latently red from day one. The 17 errors: (a) **11×** — 12 controllers `extends PhiController` (the LMS-L1 no-op base) but only one calls `super()`, so every derived constructor is a `TS2377`; (b) `Mux.webhooks.verifySignature` references a non-existent **static** — the v9 SDK exposes it on the client instance — **so Mux webhook signature verification never compiled** (see the corrected "already solid" note above); (c) the Stripe `apiVersion` literal doesn't match the installed `stripe@17` types; (d) `PrismaHealthIndicator.pingCheck` is handed the hand-rolled `PrismaService`, not a `PrismaClient`; (e) **2×** `$transaction` callbacks have implicitly-`any` `tx`; (f) `ClerkService.verifyBearer` has a non-portable inferred return type.
+- **Fix:** Delete the dead `PhiController` base + every `extends`/`super()` (**this also closes LMS-L1**); call `verifyWebhook` on the Mux client instance; pin Stripe `apiVersion` to the version the installed SDK is typed for; cast `PrismaService → PrismaClient` at the health `pingCheck` with an inline pointer to LMS-M2 (stopgap until M2 makes it a real client); annotate `tx: Prisma.TransactionClient`; give `verifyBearer` an explicit `ReturnType<typeof import("@clerk/backend").verifyToken>`.
+- **Verify:** `pnpm -r run typecheck` and `pnpm --filter @maple-care/api build` both exit 0 (api + web). This is the **prerequisite for LMS-H2's typecheck/build gate to be green** — sequence it before H2.
+- **Effort:** S. **Status:** `[x]` (done 2026-06-08; verified `tsc --noEmit` + `nest build` green locally).
+
+---
+
+# MEDIUM — first patch
+
+### LMS-M1 · Live Clerk test secrets sit in the working-tree `.env` 🟡
+- **Where:** `.env` (gitignored, **not** tracked — confirmed via `git ls-files`).
+- **Root cause:** `.env` carries working `CLERK_SECRET_KEY=sk_test_…` and publishable keys in plaintext (the file's own header says "Never commit real secrets"). No git leak, but these are live credentials to a Clerk dev instance sitting on disk; if the tree is ever shared/zipped they're exposed.
+- **Fix:** Rotate the Clerk dev keys; keep real values only in the developer's local untracked `.env`, and ensure `.env.example` carries placeholders only. Document the rotation in the runbook.
+- **Verify:** `.env.example` has no real key material; rotated keys; `git ls-files | grep .env` shows only `.env.example`.
+- **Effort:** S. **Status:** `[ ]`
+
+### LMS-M2 · `PrismaService` hand-rolled getter wrapper drops type safety and hides new models 🟡
+- **Where:** [apps/api/src/prisma/prisma.service.ts](apps/api/src/prisma/prisma.service.ts)
+- **Root cause:** Each model is exposed via a manual getter and `$transaction`/`$queryRaw`/`$executeRaw` are cast to `any`. A new model is invisible until someone adds a getter; the `any` casts erase type safety on raw queries and transactions.
+- **Fix:** Use the conventional `extends PrismaClient` (or expose the `$extends`-wrapped client via a typed accessor) with `onModuleInit`/`onModuleDestroy`, so all models + raw helpers are typed and auto-available. Re-confirm the tenant extension still applies through `$transaction` callbacks after the change.
+- **Verify:** `tsc --noEmit` clean with no `as any` on the Prisma surface; a newly added model is usable without editing `PrismaService`; LMS-C1 transaction-path tests still enforce isolation.
+- **Effort:** S. **Status:** `[ ]` — still open. LMS-H3 added two **stopgap** casts that point back here (a `PrismaService → PrismaClient` cast at the health `pingCheck`, and `tx: Prisma.TransactionClient` annotations on the two `$transaction` callbacks); the real fix (extend `PrismaClient`) removes both.
+
+### LMS-M3 · DTO/validation coverage unconfirmed; no reject-path test 🟡
+- **Where:** `apps/api/src/**/dto/*`, controllers accepting body/query.
+- **Root cause:** `ValidationPipe` is global and several DTOs exist, but the roadmap's "DTO on every body/query handler" and "smoke-test that unknown fields / wrong types reject with 400" are unverified.
+- **Fix:** Audit every controller method that takes `@Body()`/`@Query()` for a class-validator DTO; add a small e2e that POSTs an unknown field and a wrong-typed field to a representative endpoint and asserts 400.
+- **Verify:** Reject-path e2e green; no controller body/query param typed as a bare `any`/inline object.
+- **Effort:** S. **Status:** `[ ]`
+
+---
+
+# LOW — backlog
+
+### LMS-L1 · `PhiController` base class is a dead no-op marker 🔵
+- **Where:** [apps/api/src/audit/phi.controller.ts](apps/api/src/audit/phi.controller.ts) — 12 controllers `extends PhiController`, but it does nothing (the interceptor is global).
+- **Fix:** Either delete it (and the `extends` clauses) or give it real behavior. Right now it implies structure that doesn't exist.
+- **Effort:** S. **Status:** `[x]` — resolved in **LMS-H3**: the base class and all 12 `extends` clauses were deleted (they were also the source of 11 of H3's compile errors).
+
+### LMS-L2 · Retention sweep relies on the prod guardrail no-op for cross-org deletes 🔵
+- **Where:** [apps/api/src/retention/retention.processor.ts:50-128](apps/api/src/retention/retention.processor.ts)
+- **Root cause:** The sweep does intentional cross-org `deleteMany`/`updateMany` (correct for a global system job), but today that only "works" because the prod guardrail logs-and-passes. Under the LMS-H1 fail-closed rewrite it must be made explicit.
+- **Fix:** Run the sweep under the LMS-H1 `runAsSystem()` escape so cross-org access is intentional and greppable, not incidental.
+- **Verify:** Retention test passes under the fail-closed extension.
+- **Effort:** S (folds into LMS-H1). **Status:** `[ ]`
+
+---
+
+## Roadmap reconciliation — Phase 1 as-built
+
+Supersedes the `[ ]` boxes under "LMS Phase 1" in `ROADMAP.md` (in the `psw` repo). Status uses this doc's legend.
+
+| Roadmap Phase 1 line | As-built | Tracking |
+| --- | --- | --- |
+| Vitest + supertest harness | `[~]` vitest present; supertest installed but no e2e harness wired | LMS-C2 |
+| Cross-tenant isolation tests (#1) | `[!]` file exists, fully mocked + partly vacuous | **LMS-C1** |
+| Certificate issuance idempotency | `[ ]` | LMS-C2 |
+| Attempt scoring | `[x]` mocked unit (`assignments.service.spec.ts`) | — |
+| Required-training materialization | `[ ]` | LMS-C2 |
+| Stripe webhook handler | `[~]` sig-verify built, untested | LMS-C2 |
+| Mux webhook handler | `[~]` sig-verify built, untested | LMS-C2 |
+| Clerk webhook handler | `[~]` svix-verify built, untested | LMS-C2 |
+| ≥60% service coverage | `[ ]` nowhere close | LMS-C2 |
+| class-validator + class-transformer | `[x]` installed | — |
+| Global `ValidationPipe` | `[x]` `main.ts` | — |
+| DTOs on every body/query handler | `[~]` partial, unconfirmed | LMS-M3 |
+| Reject-unknown-field smoke test | `[ ]` | LMS-M3 |
+| Base `PhiController` default-on | `[x]` interceptor global; the no-op base class was deleted in LMS-H3 | LMS-L1 ✓ / LMS-H3 |
+| `@SkipPhiAccess()` decorator | `[x]` exists + used | — |
+| Migrate PHI controllers to annotated | `[x]` all annotated | — |
+| Test: every handler annotated-or-skipped | `[~]` runtime guard only, no test | LMS-C2 |
+| `lms-ci.yml` on every PR | `[x]` push + PR to main | — |
+| CI steps (typecheck/lint/test/migrate-diff) | `[~]` lint off, no typecheck, no migrate-diff, no DB services | **LMS-H2** |
+| Dockerfile `apps/api` | `[x]` | — |
+| Dockerfile `apps/web` | `[x]` | — |
+| Preview env per PR | `[ ]` (optional) | — |
+| Prisma `$extends` orgId guardrail | `[!]` exists but broken-by-design | **LMS-H1** |
+| Throws dev / logs prod | `[~]` implemented as spec'd; the spec is the defect | LMS-H1 |
+
+---
+
+## Suggested sequencing (when a resume trigger fires)
+
+One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Order matters — the guardrail rewrite and the test harness are mutually reinforcing.
+
+0. **LMS-H3 (make the API type-check/build)** — discovered while starting H2; the api doesn't compile, so the H2 typecheck/build gate can't be green until this lands. Folds in LMS-L1. ~½ day. **✅ done 2026-06-08.**
+1. **LMS-H2 (CI services + drift gate)** — stands up the Postgres/Redis CI block the integration tests need, and the migrate-diff gate. ~½ day.
+2. **LMS-H1 (guardrail rewrite)** — AsyncLocalStorage orgId injection + `runAsSystem()` (folds in LMS-L2). Fixes the dev landmine so the rest of the suite can run. ~2 days.
+3. **LMS-C1 (real cross-tenant suite)** — the #1 commercial-risk closer; depends on 1 + 2. ~3 days.
+4. **LMS-C2 (idempotency/scoring/materialization/webhook tests + coverage gate)** — on the same harness. ~3 days.
+5. **LMS-M1/M2/M3** — cleanup pass, ~1 day total. (LMS-L1 already closed by H3.)
+
+**Definition of done:** real two-org isolation suite green in CI against a live Postgres; guardrail fail-closed in every env with an explicit system-job escape; webhook + cert-idempotency tested; ≥60% service coverage gated; ROADMAP Part A reconciled to this doc. Only then is the LMS "happy path works" → "trustable with operator PHI."
+
+---
+
+## Changelog
+- _2026-06-08_ — **Resume work started.** `git init` on the LMS repo (was entirely untracked); baseline tree committed to `main`. Logged **LMS-H3** (the api doesn't type-check/build — 17 pre-existing errors surfaced while wiring the H2 gate) and shipped its fix on branch `fix/lms-h3-api-typecheck-build`: deleted the dead `PhiController` base (**closes LMS-L1**), fixed the Mux instance-vs-static webhook bug (corrected the "already solid" claim), Stripe `apiVersion`, the health `pingCheck` cast, two `$transaction` `tx` annotations, and the Clerk return type. Verified `tsc --noEmit` + `nest build` green (api + web). H2 (CI services + drift gate + lint, already drafted) sequences next, on top of H3.
+- _2026-06-08_ — Doc created. Full code-read of `apps/api`; reconciled ROADMAP Part A Phase 1 against reality (most of Phase 1 built but unverified); logged LMS-C1/C2 + LMS-H1/H2 + LMS-M1–M3 + LMS-L1/L2. No code changes — LMS remains paused; this is the resume punch list.
