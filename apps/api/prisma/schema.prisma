@@ -1,0 +1,394 @@
+// Maple Care — compliance LMS for Atlantic-Canada LTC operators.
+// Launch jurisdiction: New Brunswick (statutory bilingual delivery + PHIPAA).
+// Schema is multi-tenant from day 1 to support NS/PE/NL expansion.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────
+
+enum Jurisdiction {
+  NB
+  NS
+  PE
+  NL
+  ON
+}
+
+enum OrgPermission {
+  STAFF        // regular learner
+  SITE_ADMIN   // manages one site
+  ORG_ADMIN    // manages the whole organization
+}
+
+enum ModuleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonVideoStatus {
+  PENDING
+  UPLOADING
+  PROCESSING
+  READY
+  ERRORED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  REVOKED
+}
+
+enum TrainingCadence {
+  ONCE
+  ANNUAL
+  TWO_YEARS
+  THREE_YEARS
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// ── Identity ─────────────────────────────────────────────────────────────
+
+model User {
+  id                String     @id @default(cuid())
+  clerkUserId       String?    @unique
+  email             String     @unique
+  name              String?
+  preferredLocale   String     @default("en-CA")  // "en-CA" | "fr-CA"
+  consentMarketing  Boolean    @default(false)
+  consentRecordedAt DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  staff             Staff?     // v1: one user belongs to one org
+  auditEvents       AuditEvent[]
+}
+
+// ── Tenant graph ─────────────────────────────────────────────────────────
+
+model Organization {
+  id                      String       @id @default(cuid())
+  name                    String
+  jurisdiction            Jurisdiction
+  primaryRegulator        String?      // e.g. "NB Dept. of Social Development"
+  preferredLocale         String       @default("en-CA")
+  stripeCustomerId        String?      @unique
+  dataResidencyAttestedAt DateTime?    // operator signs DPA / residency attestation
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  sites             Site[]
+  staff             Staff[]
+  modules           Module[]
+  requiredTrainings RequiredTraining[]
+  subscriptions     Subscription[]
+  rosterImports     RosterImport[]
+  assignments       Assignment[]
+  attempts          Attempt[]
+  certificates      Certificate[]
+
+  @@index([jurisdiction])
+}
+
+model Site {
+  id                     String   @id @default(cuid())
+  orgId                  String
+  org                    Organization @relation(fields: [orgId], references: [id])
+  name                   String
+  address                String?
+  regulatorLicenseNumber String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  staff                  Staff[]
+  requiredTrainings      RequiredTraining[]
+
+  @@index([orgId])
+}
+
+// Lookup table — occupational role per jurisdiction.
+// Seeded with NB taxonomy (RA/PCW/RN/RPN/...) on launch.
+model Role {
+  code         String       @id   // "NB_RA", "NB_PCW", "NB_RN", "ORG_ADMIN", ...
+  labelEn      String
+  labelFr      String
+  jurisdiction Jurisdiction
+  equivalentTo String?            // cross-province mapping, e.g. "NS_CCA"
+
+  staff             Staff[]
+  requiredTrainings RequiredTraining[]
+
+  @@index([jurisdiction])
+}
+
+model Staff {
+  id             String        @id @default(cuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id])
+  orgId          String
+  org            Organization  @relation(fields: [orgId], references: [id])
+  siteId         String?
+  site           Site?         @relation(fields: [siteId], references: [id])
+  roleCode       String
+  role           Role          @relation(fields: [roleCode], references: [code])
+  orgPermission  OrgPermission @default(STAFF)
+  employmentType String?       // FT | PT | CASUAL
+  startedAt      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  assignments    Assignment[]
+
+  @@index([orgId, siteId])
+  @@index([roleCode])
+}
+
+// ── Content ──────────────────────────────────────────────────────────────
+
+model Module {
+  id              String        @id @default(cuid())
+  orgId           String?       // null = Maple Care global library module
+  org             Organization? @relation(fields: [orgId], references: [id])
+  slug            String        @unique
+  titleEn         String
+  titleFr         String
+  descriptionEn   String
+  descriptionFr   String
+  durationMin     Int
+  jurisdiction    Jurisdiction? // null = applies across all jurisdictions
+  // Citations as { "NB": ["Nursing Homes Act, s.5(1)"], "NS": [...] }
+  regulatoryCitations Json?
+  status          ModuleStatus  @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  lessons           Lesson[]
+  quiz              Quiz?
+  requiredTrainings RequiredTraining[]
+  assignments       Assignment[]
+
+  @@index([orgId])
+  @@index([jurisdiction, status])
+}
+
+model Lesson {
+  id            String            @id @default(cuid())
+  moduleId      String
+  module        Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  titleEn       String
+  titleFr       String
+  position      Int
+  muxAssetId    String?           @unique
+  muxPlaybackId String?
+  muxUploadId   String?           @unique
+  videoStatus   LessonVideoStatus @default(PENDING)
+  durationSec   Int?
+  isPreview     Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([moduleId, position])
+  @@index([moduleId])
+}
+
+model Quiz {
+  id        String     @id @default(cuid())
+  moduleId  String     @unique
+  module    Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  passMark  Int        @default(80)   // percentage required
+  randomize Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  questions Question[]
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  promptEn    String
+  promptFr    String
+  type        String   @default("SINGLE")  // SINGLE | MULTIPLE | TRUE_FALSE
+  choicesEn   Json
+  choicesFr   Json
+  correctIdx  Json     // [0] for single, [0,2] for multiple
+  explainEn   String?
+  explainFr   String?
+  position    Int
+
+  @@index([quizId, position])
+}
+
+// ── Compliance policy + assignments ──────────────────────────────────────
+
+// "At Site X, role Y must complete Module Z on cadence C." Per-jurisdiction.
+model RequiredTraining {
+  id           String          @id @default(cuid())
+  orgId        String
+  org          Organization    @relation(fields: [orgId], references: [id])
+  siteId       String?         // null = applies across all sites in the org
+  site         Site?           @relation(fields: [siteId], references: [id])
+  roleCode     String
+  role         Role            @relation(fields: [roleCode], references: [code])
+  moduleId     String
+  module       Module          @relation(fields: [moduleId], references: [id])
+  cadence      TrainingCadence
+  graceDays    Int             @default(30)
+  jurisdiction Jurisdiction
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([orgId, siteId, roleCode, moduleId])
+  @@index([orgId, roleCode])
+}
+
+model Assignment {
+  id                 String           @id @default(cuid())
+  orgId              String
+  org                Organization     @relation(fields: [orgId], references: [id])
+  staffId            String
+  staff              Staff            @relation(fields: [staffId], references: [id])
+  moduleId           String
+  module             Module           @relation(fields: [moduleId], references: [id])
+  requiredTrainingId String?          // null for ad-hoc assignments
+  status             AssignmentStatus @default(ASSIGNED)
+  dueAt              DateTime
+  completedAt        DateTime?
+  expiresAt          DateTime?        // for cadenced renewal
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  attempts    Attempt[]
+  certificate Certificate?
+
+  @@unique([staffId, moduleId, dueAt])
+  @@index([orgId])
+  @@index([staffId, status])
+  @@index([dueAt])
+}
+
+model Attempt {
+  id              String     @id @default(cuid())
+  orgId           String
+  org             Organization @relation(fields: [orgId], references: [id])
+  assignmentId    String
+  assignment      Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  scorePct        Int?
+  passed          Boolean    @default(false)
+  startedAt       DateTime   @default(now())
+  submittedAt     DateTime?
+  // Tamper-evident attestation. Hash of (staffId|moduleId|submittedAt|scorePct).
+  attestationIp   String?
+  attestationUa   String?
+  attestationHash String?
+  responses       Json?
+
+  @@index([assignmentId])
+  @@index([orgId])
+}
+
+model Certificate {
+  id           String     @id @default(cuid())
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id])
+  assignmentId String     @unique
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  pdfS3Key     String
+  sha256       String
+  issuedAt     DateTime   @default(now())
+  expiresAt    DateTime?
+
+  @@index([sha256])
+}
+
+// ── Billing ──────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  orgId                String
+  org                  Organization       @relation(fields: [orgId], references: [id])
+  stripeSubscriptionId String             @unique
+  status               SubscriptionStatus
+  seats                Int
+  pricePerSeatCents    Int
+  currency             String             @default("CAD")
+  currentPeriodEnd     DateTime
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([orgId])
+}
+
+// ── Operations ───────────────────────────────────────────────────────────
+
+model RosterImport {
+  id           String       @id @default(cuid())
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id])
+  uploadedById String
+  fileS3Key    String
+  status       String       // QUEUED | PROCESSING | DONE | FAILED
+  rowsProcessed Int         @default(0)
+  rowsErrored   Int         @default(0)
+  errors       Json?
+  createdAt    DateTime     @default(now())
+
+  @@index([orgId])
+}
+
+// State-change ledger (consent, role change, refund, certificate issued, etc.).
+// Append-only — never UPDATE or DELETE rows from app code.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  orgId      String?
+  action     String
+  entityType String?
+  entityId   String?
+  payload    Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([orgId, createdAt])
+  @@index([entityType, entityId])
+}
+
+// PHIPAA per-record access log: every read of personal health
+// information must be recorded. Separate from AuditEvent (which is
+// for state changes) so retention + export workflows can target each.
+model RecordAccessLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  orgId       String?
+  entityType  String   // "Staff" | "Assignment" | "Certificate" | "Attempt"
+  entityId    String
+  action      String   // "read" | "list" | "export" | "download"
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([orgId, createdAt])
+}

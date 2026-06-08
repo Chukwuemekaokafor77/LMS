@@ -1,0 +1,43 @@
+name: LMS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint & Format Check
+        run: |
+          pnpm --filter @maple-care/api exec prisma format
+          pnpm --filter @maple-care/api exec prisma validate
+          # pnpm lint # Enable when linting is configured
+
+      - name: Run API Tests
+        run: pnpm --filter @maple-care/api test
+
+      - name: Build API
+        run: pnpm --filter @maple-care/api build
+
+      - name: Build Web
+        run: pnpm --filter @maple-care/web build

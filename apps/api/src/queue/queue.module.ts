@@ -1,0 +1,43 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { BullModule } from "@nestjs/bullmq";
+
+export const QUEUES = {
+  email: "email",
+  stripeRetry: "stripe-retry",
+  roster: "roster-import",
+  materialize: "assignment-materialize",
+  certificate: "certificate-generate",
+  retention: "retention-sweep",
+} as const;
+
+@Module({
+  imports: [
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const url = config.getOrThrow<string>("REDIS_URL");
+        const u = new URL(url);
+        return {
+          connection: {
+            host: u.hostname,
+            port: Number(u.port || 6379),
+            password: u.password || undefined,
+            username: u.username || undefined,
+          },
+        };
+      },
+    }),
+    BullModule.registerQueue(
+      { name: QUEUES.email },
+      { name: QUEUES.stripeRetry },
+      { name: QUEUES.roster },
+      { name: QUEUES.materialize },
+      { name: QUEUES.certificate },
+      { name: QUEUES.retention },
+    ),
+  ],
+  exports: [BullModule],
+})
+export class QueueModule {}
