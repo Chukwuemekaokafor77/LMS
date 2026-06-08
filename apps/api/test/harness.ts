@@ -39,6 +39,7 @@ function setDummyEnv() {
     MUX_SIGNING_KEY_ID: "test",
     RESEND_API_KEY: "re_test",
     STRIPE_SECRET_KEY: "sk_test_dummy",
+    STRIPE_WEBHOOK_SECRET: "whsec_stripe_dummy",
     STRIPE_PRICE_PER_SEAT_ID: "price_test",
     EMAIL_FROM: "test@example.com",
     WEB_BASE_URL: "http://localhost:3000",
