@@ -15,13 +15,12 @@ import { S3Service } from "../storage/s3.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { QUEUES } from "../queue/queue.module";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { PhiController } from "../audit/phi.controller";
 import { StartRosterImportDto, CommitRosterImportDto } from "./dto/roster-import.dto";
 
 
 
 @Controller("roster-imports")
-export class RosterController extends PhiController {
+export class RosterController {
   constructor(
     private readonly s3: S3Service,
     private readonly prisma: PrismaService,

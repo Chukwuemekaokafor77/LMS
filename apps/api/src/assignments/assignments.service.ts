@@ -7,6 +7,7 @@ import {
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { createHash } from "crypto";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
@@ -131,7 +132,7 @@ export class AssignmentsService {
       )
       .digest("hex");
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const a = await tx.attempt.update({
         where: { id: attempt.id },
         data: {

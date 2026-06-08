@@ -10,10 +10,9 @@ import type { StaffContext } from "../tenant/tenant.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { S3Service } from "../storage/s3.service";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { PhiController } from "../audit/phi.controller";
 
 @Controller("certificates")
-export class CertificatesController extends PhiController {
+export class CertificatesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly s3: S3Service,

@@ -18,14 +18,13 @@ import { CurrentUser } from "../auth/current-user.decorator";
 import { Public } from "../auth/public.decorator";
 import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 import { CheckoutDto } from "./dto/checkout.dto";
 
 
 
 @Controller()
-export class BillingController extends PhiController {
+export class BillingController {
   private readonly log = new Logger(BillingController.name);
 
   constructor(

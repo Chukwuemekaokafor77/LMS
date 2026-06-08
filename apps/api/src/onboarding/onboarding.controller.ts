@@ -8,14 +8,13 @@ import { z } from "zod";
 import { Jurisdiction } from "@prisma/client";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { OnboardingService } from "./onboarding.service";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 
 
 
 @Controller("onboarding")
-export class OnboardingController extends PhiController {
+export class OnboardingController {
   constructor(private readonly onboarding: OnboardingService) {}
 
   @Post("organization")

@@ -25,7 +25,9 @@ export class ClerkService implements OnModuleInit {
     return this.client;
   }
 
-  async verifyBearer(token: string) {
+  async verifyBearer(
+    token: string,
+  ): ReturnType<typeof import("@clerk/backend").verifyToken> {
     const { verifyToken } = await import("@clerk/backend");
     return verifyToken(token, { secretKey: this.secretKey });
   }

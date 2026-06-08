@@ -13,7 +13,6 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Public } from "./public.decorator";
 import { InvitationsService } from "../staff/invitations.service";
 import type { OrgPermission } from "@prisma/client";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 
 type ClerkUser = {
@@ -36,7 +35,7 @@ type ClerkEvent =
   | { type: "user.deleted"; data: { id: string; deleted?: boolean } };
 
 @Controller("webhooks/clerk")
-export class ClerkWebhookController extends PhiController {
+export class ClerkWebhookController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,

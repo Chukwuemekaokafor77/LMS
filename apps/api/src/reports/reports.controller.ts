@@ -10,7 +10,6 @@ import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import { ReportsService, type ReportFilters } from "./reports.service";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { PhiController } from "../audit/phi.controller";
 import { ReportFiltersDto } from "./dto/report-filters.dto";
 
 function parseFilters(q: ReportFiltersDto): ReportFilters {
@@ -23,7 +22,7 @@ function parseFilters(q: ReportFiltersDto): ReportFilters {
 }
 
 @Controller("reports/completions")
-export class ReportsController extends PhiController {
+export class ReportsController {
   constructor(private readonly svc: ReportsService) {}
 
   @Get()
