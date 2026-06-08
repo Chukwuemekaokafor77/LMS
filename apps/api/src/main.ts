@@ -1,9 +1,8 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
-import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
-import { withTenantScope } from "./tenant/tenant-context";
+import { tenantScopeMiddleware } from "./tenant/tenant-scope.middleware";
 
 async function bootstrap() {
   // rawBody: true makes req.rawBody available for Stripe/Mux/Clerk
@@ -16,10 +15,8 @@ async function bootstrap() {
   // Open a tenant scope around every request *before* guards run, so the Clerk
   // guard can populate orgId into it and the Prisma guardrail (LMS-H1) can read
   // it on every PHI query for the rest of the request. Must be the outermost
-  // middleware. See tenant/tenant-context.ts.
-  app.use((_req: Request, _res: Response, next: NextFunction) =>
-    withTenantScope(() => next()),
-  );
+  // middleware. See tenant/tenant-scope.middleware.ts.
+  app.use(tenantScopeMiddleware);
 
   app.useGlobalPipes(
     new ValidationPipe({

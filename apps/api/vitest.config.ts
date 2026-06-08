@@ -1,7 +1,20 @@
 import { defineConfig } from "vitest/config";
+import swc from "unplugin-swc";
 import path from "path";
 
 export default defineConfig({
+  // SWC emits the decorator metadata (design:paramtypes) that NestJS DI needs —
+  // vitest's default esbuild transform does not, so the e2e harness that boots
+  // the Nest app (test/*.e2e-spec.ts) would otherwise fail to resolve providers.
+  plugins: [
+    swc.vite({
+      module: { type: "es6" },
+      jsc: {
+        target: "es2021",
+        transform: { legacyDecorator: true, decoratorMetadata: true },
+      },
+    }),
+  ],
   test: {
     globals: true,
     environment: "node",
