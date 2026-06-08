@@ -40,6 +40,14 @@ jobs:
     env:
       DATABASE_URL: postgresql://maple:maple@localhost:5432/maple_care
       REDIS_URL: redis://localhost:6379
+      # Build-time placeholders so `next build` can prerender the Clerk-wrapped
+      # pages (e.g. /dashboard) — without a publishable key ClerkProvider throws
+      # at prerender. The publishable key is non-secret (the canonical Clerk
+      # `clerk.example.com` example key); the secret is a throwaway that is never
+      # used to reach Clerk since no network calls happen during a static build.
+      # Real keys live only in the developer's untracked .env (see LMS-M1).
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_ci_build_placeholder_not_a_real_key0
 
     steps:
       - uses: actions/checkout@v4
