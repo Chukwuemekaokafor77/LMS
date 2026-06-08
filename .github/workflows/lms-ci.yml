@@ -10,6 +10,37 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # Real Postgres + Redis so the LMS-C1/C2 integration tests can run against a
+    # live DB in CI (see LMS_PRE_LAUNCH_AUDIT.md — LMS-H2). Credentials match
+    # docker-compose.yml / .env.example so local and CI share one DATABASE_URL shape.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: maple
+          POSTGRES_PASSWORD: maple
+          POSTGRES_DB: maple_care
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U maple"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://maple:maple@localhost:5432/maple_care
+      REDIS_URL: redis://localhost:6379
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,13 +58,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint & Format Check
-        run: |
-          pnpm --filter @maple-care/api exec prisma format
-          pnpm --filter @maple-care/api exec prisma validate
-          # pnpm lint # Enable when linting is configured
+      - name: Generate Prisma client
+        run: pnpm --filter @maple-care/api exec prisma generate
 
-      - name: Run API Tests
+      - name: Validate Prisma schema
+        run: pnpm --filter @maple-care/api exec prisma validate
+
+      - name: Typecheck
+        run: pnpm -r run typecheck
+
+      - name: Lint
+        run: pnpm -r run lint
+
+      - name: Apply migrations
+        run: pnpm --filter @maple-care/api exec prisma migrate deploy
+
+      # Drift gate: the live DB (built only from committed migrations) must match
+      # schema.prisma's datamodel. A schema edit without a matching migration —
+      # or a migration without a schema update — produces a non-empty diff and
+      # `--exit-code` fails the job. Reuses the migrate-deploy'd DB, no shadow DB.
+      - name: Schema drift gate
+        run: |
+          pnpm --filter @maple-care/api exec prisma migrate diff \
+            --from-schema-datasource ./prisma/schema.prisma \
+            --to-schema-datamodel ./prisma/schema.prisma \
+            --exit-code
+
+      # Coverage floor (60% on src/**/*.service.ts) is gated with LMS-C2, once
+      # real service tests exist — see LMS_PRE_LAUNCH_AUDIT.md.
+      - name: Run API tests
         run: pnpm --filter @maple-care/api test
 
       - name: Build API
