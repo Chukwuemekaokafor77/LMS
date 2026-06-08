@@ -92,7 +92,7 @@ These were verified by code-read this session and are genuinely good — the poi
   3. Re-enable lint (configure ESLint first) and add an explicit `typecheck` step (`tsc --noEmit` for api + web).
   4. Gate coverage (LMS-C2) at 60% on the service layer.
 - **Verify:** A PR that edits `schema.prisma` without a migration fails CI; lint + typecheck run; integration tests run against the service DBs.
-- **Effort:** M. **Status:** `[~]`
+- **Effort:** M. **Status:** `[x]` (done 2026-06-08, merged PR #2; CI green). The drift gate proved itself on its first run by catching **real pre-existing drift** — `schema.prisma` had `orgId` (+FK, +`@@index`) on `Assignment`/`Attempt`/`Certificate` with no migration that added them, so a DB built from migrations lacked the columns the app + the (future) H1 guardrail rely on; fixed with a generated reconciling migration (additive, NOT NULL — empty-table only; no prod data exists). Wiring the web build also surfaced that the committed tree never built web in a clean env (missing `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`); CI now supplies a non-secret build-time placeholder. **One caveat carried forward:** the **60% service-layer coverage floor is deferred to LMS-C2** — only coverage *plumbing* (vitest v8, lcov, `src/**/*.service.ts`) landed here; gating at a floor now would gate at ~0% since no service tests exist yet.
 
 ### LMS-H3 · The API does not type-check or build 🟠
 - **Where:** `apps/api/src` — all 12 PHI controllers, [video/mux.service.ts:31](apps/api/src/video/mux.service.ts), [billing/stripe.service.ts:15](apps/api/src/billing/stripe.service.ts), [health/health.controller.ts:25](apps/api/src/health/health.controller.ts), [auth/clerk.service.ts:28](apps/api/src/auth/clerk.service.ts), and the `assignments`/`onboarding` services.
@@ -168,7 +168,7 @@ Supersedes the `[ ]` boxes under "LMS Phase 1" in `ROADMAP.md` (in the `psw` rep
 | Migrate PHI controllers to annotated | `[x]` all annotated | — |
 | Test: every handler annotated-or-skipped | `[~]` runtime guard only, no test | LMS-C2 |
 | `lms-ci.yml` on every PR | `[x]` push + PR to main | — |
-| CI steps (typecheck/lint/test/migrate-diff) | `[~]` lint off, no typecheck, no migrate-diff, no DB services | **LMS-H2** |
+| CI steps (typecheck/lint/test/migrate-diff) | `[x]` services + drift gate + lint + typecheck live (PR #2) | LMS-H2 ✓ |
 | Dockerfile `apps/api` | `[x]` | — |
 | Dockerfile `apps/web` | `[x]` | — |
 | Preview env per PR | `[ ]` (optional) | — |
@@ -182,7 +182,7 @@ Supersedes the `[ ]` boxes under "LMS Phase 1" in `ROADMAP.md` (in the `psw` rep
 One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Order matters — the guardrail rewrite and the test harness are mutually reinforcing.
 
 0. **LMS-H3 (make the API type-check/build)** — discovered while starting H2; the api doesn't compile, so the H2 typecheck/build gate can't be green until this lands. Folds in LMS-L1. ~½ day. **✅ done 2026-06-08.**
-1. **LMS-H2 (CI services + drift gate)** — stands up the Postgres/Redis CI block the integration tests need, and the migrate-diff gate. ~½ day.
+1. **LMS-H2 (CI services + drift gate)** — stands up the Postgres/Redis CI block the integration tests need, and the migrate-diff gate. ~½ day. **✅ done 2026-06-08 (PR #2).**
 2. **LMS-H1 (guardrail rewrite)** — AsyncLocalStorage orgId injection + `runAsSystem()` (folds in LMS-L2). Fixes the dev landmine so the rest of the suite can run. ~2 days.
 3. **LMS-C1 (real cross-tenant suite)** — the #1 commercial-risk closer; depends on 1 + 2. ~3 days.
 4. **LMS-C2 (idempotency/scoring/materialization/webhook tests + coverage gate)** — on the same harness. ~3 days.
@@ -193,5 +193,6 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-06-08_ — **LMS-H2 done (PR #2, CI green).** Rewrote `lms-ci.yml`: `postgres:16-alpine` + `redis:7-alpine` health-checked services (creds matching `.env.example`), pipeline `prisma generate → validate → typecheck → lint → migrate deploy → drift gate → test → build api → build web`. Drift gate = `migrate diff --from-schema-datasource --to-schema-datamodel --exit-code` against the migrate-deploy'd DB (no shadow DB). Added baseline ESLint (api flat config + web `next/core-web-vitals`, noisy rules → `warn` for a CI-green baseline) and vitest coverage *plumbing* (the 60% floor stays deferred to **LMS-C2** — no service tests exist yet). Wiring the gate surfaced and fixed three pre-existing problems: (a) **real schema drift** — `orgId` (+FK/+index) was on `Assignment`/`Attempt`/`Certificate` in `schema.prisma` but in no migration; added a generated reconciling migration (additive, NOT NULL, empty-table only — no prod data); (b) the web build never built in a clean env (missing Clerk publishable key) — CI now supplies a non-secret build-time placeholder; (c) deprecated tsconfig `baseUrl` (would break the new typecheck gate under TS 6+) removed, and the `pnpm/action-setup` `version:` input dropped in favour of the `packageManager` pin. **LMS-H1 (guardrail rewrite) sequences next.**
 - _2026-06-08_ — **Resume work started.** `git init` on the LMS repo (was entirely untracked); baseline tree committed to `main`. Logged **LMS-H3** (the api doesn't type-check/build — 17 pre-existing errors surfaced while wiring the H2 gate) and shipped its fix on branch `fix/lms-h3-api-typecheck-build`: deleted the dead `PhiController` base (**closes LMS-L1**), fixed the Mux instance-vs-static webhook bug (corrected the "already solid" claim), Stripe `apiVersion`, the health `pingCheck` cast, two `$transaction` `tx` annotations, and the Clerk return type. Verified `tsc --noEmit` + `nest build` green (api + web). H2 (CI services + drift gate + lint, already drafted) sequences next, on top of H3.
 - _2026-06-08_ — Doc created. Full code-read of `apps/api`; reconciled ROADMAP Part A Phase 1 against reality (most of Phase 1 built but unverified); logged LMS-C1/C2 + LMS-H1/H2 + LMS-M1–M3 + LMS-L1/L2. No code changes — LMS remains paused; this is the resume punch list.
