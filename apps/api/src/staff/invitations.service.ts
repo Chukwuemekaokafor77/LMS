@@ -14,6 +14,7 @@ import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
 import type { OrgPermission } from "@prisma/client";
 import type { StaffContext } from "../tenant/tenant.types";
+import { runAsSystem, runWithOrgContext } from "../tenant/tenant-context";
 
 export type InviteInput = {
   email: string;
@@ -73,9 +74,14 @@ export class InvitationsService {
       where: { email: input.email.toLowerCase() },
     });
     if (existingUser) {
-      const existingStaff = await this.prisma.staff.findUnique({
-        where: { userId: existingUser.id },
-      });
+      // Deliberately cross-org: v1 is one-org-per-user, so we must check
+      // whether this user is Staff in *any* org, not just the actor's.
+      const existingStaff = await runAsSystem(
+        async () =>
+          await this.prisma.staff.findUnique({
+            where: { userId: existingUser.id },
+          }),
+      );
       if (existingStaff) {
         throw new ConflictException(
           "User already belongs to an organization",
@@ -149,19 +155,25 @@ export class InvitationsService {
     });
     if (!role) throw new NotFoundException(`Role ${args.roleCode} not found`);
 
-    const staff = await this.prisma.staff.upsert({
-      where: { userId: args.userId },
-      create: {
-        userId: args.userId,
-        orgId: args.orgId,
-        siteId: args.siteId,
-        roleCode: args.roleCode,
-        orgPermission: args.orgPermission,
-        employmentType: args.employmentType,
-        startedAt: new Date(),
-      },
-      update: {},
-    });
+    // Runs from the Clerk webhook (no HTTP auth → no org context), but the
+    // invitation metadata tells us exactly which org the new Staff belongs to.
+    const staff = await runWithOrgContext(
+      args.orgId,
+      async () =>
+        await this.prisma.staff.upsert({
+          where: { userId: args.userId },
+          create: {
+            userId: args.userId,
+            orgId: args.orgId,
+            siteId: args.siteId,
+            roleCode: args.roleCode,
+            orgPermission: args.orgPermission,
+            employmentType: args.employmentType,
+            startedAt: new Date(),
+          },
+          update: {},
+        }),
+    );
     await this.materializeQ.add("materialize-for-staff", {
       staffId: staff.id,
     });

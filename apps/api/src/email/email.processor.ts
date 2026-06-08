@@ -5,6 +5,7 @@ import type { Job } from "bullmq";
 import { PrismaService } from "../prisma/prisma.service";
 import { EmailSender } from "./email.sender";
 import { QUEUES } from "../queue/queue.module";
+import { runAsSystem } from "../tenant/tenant-context";
 
 type Jobs = {
   "assignment.assigned": { assignmentId: string };
@@ -25,6 +26,12 @@ export class EmailProcessor extends WorkerHost {
   }
 
   async process(job: Job<Jobs[keyof Jobs]>): Promise<void> {
+    // Background job (no HTTP context): reads the assignment/certificate by id
+    // to render the notification. Runs as system.
+    await runAsSystem(() => this.dispatch(job));
+  }
+
+  private async dispatch(job: Job<Jobs[keyof Jobs]>): Promise<void> {
     const from = this.config.getOrThrow<string>("EMAIL_FROM");
 
     if (job.name === "assignment.assigned") {

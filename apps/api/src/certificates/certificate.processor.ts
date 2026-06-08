@@ -7,6 +7,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { S3Service } from "../storage/s3.service";
 import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
+import { runAsSystem } from "../tenant/tenant-context";
 
 @Processor(QUEUES.certificate)
 export class CertificateProcessor extends WorkerHost {
@@ -23,8 +24,12 @@ export class CertificateProcessor extends WorkerHost {
 
   async process(job: Job<{ assignmentId: string }>): Promise<void> {
     if (job.name !== "issue") return;
-    const { assignmentId } = job.data;
+    // Background job (no HTTP context): looks a specific assignment up by id and
+    // stamps the derived orgId on the Certificate explicitly. Runs as system.
+    await runAsSystem(() => this.issue(job.data.assignmentId));
+  }
 
+  private async issue(assignmentId: string): Promise<void> {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
       include: {

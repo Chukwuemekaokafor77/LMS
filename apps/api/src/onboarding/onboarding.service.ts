@@ -6,6 +6,7 @@ import {
 import { Jurisdiction, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { runAsSystem } from "../tenant/tenant-context";
 
 const JURISDICTION_DEFAULT_LOCALE: Record<Jurisdiction, string> = {
   NB: "fr-CA",
@@ -35,6 +36,22 @@ export class OnboardingService {
    * Caller must not already be Staff somewhere — v1 is one-org-per-user.
    */
   async createOrganization(
+    userId: string,
+    input: {
+      name: string;
+      jurisdiction: Jurisdiction;
+      siteName: string;
+      siteAddress?: string;
+      regulatorLicenseNumber?: string;
+    },
+  ) {
+    // Tenant bootstrap: the caller is not Staff anywhere yet, so there is no
+    // org context to scope by — we're *creating* the org. Run as system; the
+    // staff.create inside stamps the brand-new org's id explicitly.
+    return runAsSystem(() => this.bootstrapOrganization(userId, input));
+  }
+
+  private async bootstrapOrganization(
     userId: string,
     input: {
       name: string;
