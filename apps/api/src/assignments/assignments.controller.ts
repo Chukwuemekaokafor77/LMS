@@ -14,13 +14,12 @@ import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import { AssignmentsService } from "./assignments.service";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { PhiController } from "../audit/phi.controller";
 import { SubmitAssignmentDto } from "./dto/submit-assignment.dto";
 
 
 
 @Controller("assignments")
-export class AssignmentsController extends PhiController {
+export class AssignmentsController {
   constructor(private readonly svc: AssignmentsService) {}
 
   @Get(":id")

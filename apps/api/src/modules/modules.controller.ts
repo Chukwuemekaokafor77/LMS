@@ -8,11 +8,10 @@ import { ModulesService } from "./modules.service";
 import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import type { Jurisdiction } from "@prisma/client";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 
 @Controller("modules")
-export class ModulesController extends PhiController {
+export class ModulesController {
   constructor(private readonly modules: ModulesService) {}
 
   @Get()

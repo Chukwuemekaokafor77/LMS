@@ -28,7 +28,7 @@ export class MuxService implements OnModuleInit {
   }
 
   verifyWebhook(rawBody: Buffer, signature: string) {
-    return Mux.webhooks.verifySignature(
+    return this._client.webhooks.verifySignature(
       rawBody.toString("utf8"),
       { "mux-signature": signature },
       this._webhookSecret,

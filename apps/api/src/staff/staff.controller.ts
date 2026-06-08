@@ -13,14 +13,13 @@ import type { StaffContext } from "../tenant/tenant.types";
 import { InvitationsService } from "./invitations.service";
 import { StaffService } from "./staff.service";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 import { InviteStaffDto } from "./dto/invite-staff.dto";
 
 
 
 @Controller("staff")
-export class StaffController extends PhiController {
+export class StaffController {
   constructor(
     private readonly invitations: InvitationsService,
     private readonly staff: StaffService,

@@ -19,20 +19,17 @@ import type { StaffContext } from "../tenant/tenant.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { MuxService } from "./mux.service";
 import { VideoService } from "./video.service";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 
 @Controller()
-export class VideoController extends PhiController {
+export class VideoController {
   private readonly log = new Logger(VideoController.name);
 
   constructor(
     private readonly video: VideoService,
     private readonly mux: MuxService,
     private readonly prisma: PrismaService,
-  ) {
-    super();
-  }
+  ) {}
 
   @Post("lessons/:id/upload")
   @SkipPhiAccess()

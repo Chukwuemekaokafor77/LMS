@@ -3,7 +3,7 @@ import {
   ConflictException,
   Injectable,
 } from "@nestjs/common";
-import { Jurisdiction } from "@prisma/client";
+import { Jurisdiction, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 
@@ -57,7 +57,7 @@ export class OnboardingService {
     if (!input.siteName?.trim())
       throw new BadRequestException("siteName required");
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const org = await tx.organization.create({
         data: {
           name: input.name.trim(),

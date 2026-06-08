@@ -12,14 +12,13 @@ import { TrainingCadence } from "@prisma/client";
 import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import { RequiredTrainingService } from "./required-training.service";
-import { PhiController } from "../audit/phi.controller";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 import { CreateRequiredTrainingDto } from "./dto/create-required-training.dto";
 
 
 
 @Controller("required-trainings")
-export class RequiredTrainingController extends PhiController {
+export class RequiredTrainingController {
   constructor(private readonly svc: RequiredTrainingService) {}
 
   @Get()

@@ -12,7 +12,8 @@ export class StripeService implements OnModuleInit {
   onModuleInit() {
     this._client = new Stripe(
       this.config.getOrThrow<string>("STRIPE_SECRET_KEY"),
-      { apiVersion: "2025-09-30.clover" },
+      // Pinned to the API version the installed `stripe` SDK is typed for.
+      { apiVersion: "2025-02-24.acacia" },
     );
     this._webhookSecret = this.config.getOrThrow<string>(
       "STRIPE_WEBHOOK_SECRET",
