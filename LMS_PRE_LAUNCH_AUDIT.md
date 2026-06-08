@@ -81,7 +81,7 @@ These were verified by code-read this session and are genuinely good — the poi
   3. For legitimate cross-org system jobs (retention sweep), expose an explicit `runAsSystem()` escape that sets a sentinel context — so cross-org access is *opt-in and greppable*, not an accidental prod no-op.
   4. Keep "throw in dev/test" for a genuinely missing context; in prod, fail-closed (throw) rather than log-and-pass for a missing org context — a 500 is safer than a cross-tenant leak.
 - **Verify:** LMS-C1 suite passes with the new extension active (no `SKIP_*` env); a PHI query with no request context throws in *all* envs; retention sweep still processes cross-org under `runAsSystem()`; `where: { orgId: undefined }` no longer slips through.
-- **Effort:** M. **Status:** `[!]`
+- **Effort:** M. **Status:** `[x]` (done 2026-06-08, merged PR #3; CI green). Implemented as request-scoped **orgId injection** (not "assert orgId present"): an `AsyncLocalStorage` tenant context ([tenant-context.ts](apps/api/src/tenant/tenant-context.ts)) seeded by middleware before guards and populated by the Clerk guard; the extension ([tenant-isolation.extension.ts](apps/api/src/prisma/tenant-isolation.extension.ts)) injects `where.orgId`/`data.orgId` for the 5 PHI models, overrides any caller value (kills the `orgId: undefined` bypass), and **fails closed in every env**. `runAsSystem()` is the explicit cross-org escape (guard bootstrap, onboarding tenant-create, one-org-per-user check, all 5 processors incl. retention — **closes LMS-L2**); `runWithOrgContext()` for the Clerk-webhook invitation path. **Correction to root-cause #1:** the "findUnique can't carry orgId" claim was pre-Prisma-4.5; this repo is on Prisma 5 where *extended-where-unique* is GA (verified against the DB), so injection is uniform across all ops and **no call sites were rewritten**. Verified locally: typecheck/lint/build green + a DB smoke test (fail-closed / org-injection / system-passthrough / non-PHI-passthrough). **End-to-end isolation across two seeded orgs is proven by LMS-C1 (next).**
 
 ### LMS-H2 · CI is missing the drift gate, lint, typecheck, and DB services 🟠
 - **Where:** [.github/workflows/lms-ci.yml](.github/workflows/lms-ci.yml)
@@ -140,7 +140,7 @@ These were verified by code-read this session and are genuinely good — the poi
 - **Root cause:** The sweep does intentional cross-org `deleteMany`/`updateMany` (correct for a global system job), but today that only "works" because the prod guardrail logs-and-passes. Under the LMS-H1 fail-closed rewrite it must be made explicit.
 - **Fix:** Run the sweep under the LMS-H1 `runAsSystem()` escape so cross-org access is intentional and greppable, not incidental.
 - **Verify:** Retention test passes under the fail-closed extension.
-- **Effort:** S (folds into LMS-H1). **Status:** `[ ]`
+- **Effort:** S (folds into LMS-H1). **Status:** `[x]` — done in **LMS-H1** (PR #3): `RetentionProcessor.process()` wraps the whole sweep in `runAsSystem()`, so its cross-org `deleteMany`/`updateMany`/`findMany` on PHI models are now intentional and greppable rather than relying on the old prod no-op. Retention-under-fail-closed test is part of LMS-C2.
 
 ---
 
@@ -172,8 +172,8 @@ Supersedes the `[ ]` boxes under "LMS Phase 1" in `ROADMAP.md` (in the `psw` rep
 | Dockerfile `apps/api` | `[x]` | — |
 | Dockerfile `apps/web` | `[x]` | — |
 | Preview env per PR | `[ ]` (optional) | — |
-| Prisma `$extends` orgId guardrail | `[!]` exists but broken-by-design | **LMS-H1** |
-| Throws dev / logs prod | `[~]` implemented as spec'd; the spec is the defect | LMS-H1 |
+| Prisma `$extends` orgId guardrail | `[x]` rewritten as fail-closed orgId injection (PR #3) | LMS-H1 ✓ |
+| Throws dev / logs prod | `[x]` superseded — now fails closed (throws) in *every* env | LMS-H1 ✓ |
 
 ---
 
@@ -183,7 +183,7 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 
 0. **LMS-H3 (make the API type-check/build)** — discovered while starting H2; the api doesn't compile, so the H2 typecheck/build gate can't be green until this lands. Folds in LMS-L1. ~½ day. **✅ done 2026-06-08.**
 1. **LMS-H2 (CI services + drift gate)** — stands up the Postgres/Redis CI block the integration tests need, and the migrate-diff gate. ~½ day. **✅ done 2026-06-08 (PR #2).**
-2. **LMS-H1 (guardrail rewrite)** — AsyncLocalStorage orgId injection + `runAsSystem()` (folds in LMS-L2). Fixes the dev landmine so the rest of the suite can run. ~2 days.
+2. **LMS-H1 (guardrail rewrite)** — AsyncLocalStorage orgId injection + `runAsSystem()` (folds in LMS-L2). Fixes the dev landmine so the rest of the suite can run. ~2 days. **✅ done 2026-06-08 (PR #3, folds LMS-L2).**
 3. **LMS-C1 (real cross-tenant suite)** — the #1 commercial-risk closer; depends on 1 + 2. ~3 days.
 4. **LMS-C2 (idempotency/scoring/materialization/webhook tests + coverage gate)** — on the same harness. ~3 days.
 5. **LMS-M1/M2/M3** — cleanup pass, ~1 day total. (LMS-L1 already closed by H3.)
@@ -193,6 +193,7 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-06-08_ — **LMS-H1 done (PR #3, CI green); folds LMS-L2.** Replaced the broken "assert `orgId` is in the where clause" guardrail (a dev landmine + prod no-op) with request-scoped **orgId injection**: an `AsyncLocalStorage` tenant context seeded by middleware before guards and populated by the Clerk guard, and a Prisma extension that injects `where.orgId`/`data.orgId` for the 5 PHI models, overrides any caller value (kills the `orgId: undefined` bypass), and **fails closed (throws) in every env**. `runAsSystem()` is the explicit greppable cross-org escape (guard bootstrap, onboarding tenant-create, the one-org-per-user existence check, and all 5 BullMQ processors incl. the retention sweep → **closes LMS-L2**); `runWithOrgContext()` covers the Clerk-webhook invitation path. **Corrected the audit's root-cause #1:** "findUnique can't carry orgId" was pre-Prisma-4.5 — this repo is on Prisma 5 where extended-where-unique is GA (verified against the DB), so injection is uniform and no call sites were rewritten. Also caught a lazy-PrismaPromise + AsyncLocalStorage pitfall (a `runX(() => prisma.op())` callback activates outside the scope) and fixed the affected sites to await inside. Verified locally (typecheck/lint/build + a DB smoke test of all four behaviors); the **two-org seeded end-to-end isolation proof is LMS-C1, next**. The old fully-mocked tenant-isolation e2e-spec was replaced with a unit spec for the pure `scopeQueryArgs` core.
 - _2026-06-08_ — **LMS-H2 done (PR #2, CI green).** Rewrote `lms-ci.yml`: `postgres:16-alpine` + `redis:7-alpine` health-checked services (creds matching `.env.example`), pipeline `prisma generate → validate → typecheck → lint → migrate deploy → drift gate → test → build api → build web`. Drift gate = `migrate diff --from-schema-datasource --to-schema-datamodel --exit-code` against the migrate-deploy'd DB (no shadow DB). Added baseline ESLint (api flat config + web `next/core-web-vitals`, noisy rules → `warn` for a CI-green baseline) and vitest coverage *plumbing* (the 60% floor stays deferred to **LMS-C2** — no service tests exist yet). Wiring the gate surfaced and fixed three pre-existing problems: (a) **real schema drift** — `orgId` (+FK/+index) was on `Assignment`/`Attempt`/`Certificate` in `schema.prisma` but in no migration; added a generated reconciling migration (additive, NOT NULL, empty-table only — no prod data); (b) the web build never built in a clean env (missing Clerk publishable key) — CI now supplies a non-secret build-time placeholder; (c) deprecated tsconfig `baseUrl` (would break the new typecheck gate under TS 6+) removed, and the `pnpm/action-setup` `version:` input dropped in favour of the `packageManager` pin. **LMS-H1 (guardrail rewrite) sequences next.**
 - _2026-06-08_ — **Resume work started.** `git init` on the LMS repo (was entirely untracked); baseline tree committed to `main`. Logged **LMS-H3** (the api doesn't type-check/build — 17 pre-existing errors surfaced while wiring the H2 gate) and shipped its fix on branch `fix/lms-h3-api-typecheck-build`: deleted the dead `PhiController` base (**closes LMS-L1**), fixed the Mux instance-vs-static webhook bug (corrected the "already solid" claim), Stripe `apiVersion`, the health `pingCheck` cast, two `$transaction` `tx` annotations, and the Clerk return type. Verified `tsc --noEmit` + `nest build` green (api + web). H2 (CI services + drift gate + lint, already drafted) sequences next, on top of H3.
 - _2026-06-08_ — Doc created. Full code-read of `apps/api`; reconciled ROADMAP Part A Phase 1 against reality (most of Phase 1 built but unverified); logged LMS-C1/C2 + LMS-H1/H2 + LMS-M1–M3 + LMS-L1/L2. No code changes — LMS remains paused; this is the resume punch list.
