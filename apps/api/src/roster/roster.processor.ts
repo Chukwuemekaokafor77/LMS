@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { S3Service } from "../storage/s3.service";
 import { InvitationsService } from "../staff/invitations.service";
 import { QUEUES } from "../queue/queue.module";
+import { runAsSystem } from "../tenant/tenant-context";
 
 type Row = {
   email: string;
@@ -31,7 +32,12 @@ export class RosterProcessor extends WorkerHost {
   }
 
   async process(job: Job<{ importId: string }>): Promise<void> {
-    const { importId } = job.data;
+    // Background job (no HTTP context): operates on one org's RosterImport
+    // (looked up by id) and delegates per-row invites to InvitationsService.
+    await runAsSystem(() => this.runImport(job.data.importId));
+  }
+
+  private async runImport(importId: string): Promise<void> {
     const imp = await this.prisma.rosterImport.findUnique({
       where: { id: importId },
       include: { org: true },

@@ -4,6 +4,7 @@ import type { Job } from "bullmq";
 import { PrismaService } from "../prisma/prisma.service";
 import { S3Service } from "../storage/s3.service";
 import { QUEUES } from "../queue/queue.module";
+import { runAsSystem } from "../tenant/tenant-context";
 
 /**
  * Per-entity retention policy. Atlantic LTC operators inherit federal
@@ -38,6 +39,14 @@ export class RetentionProcessor extends WorkerHost {
   }
 
   async process(_job: Job): Promise<void> {
+    // The retention sweep is intentionally cross-org (a global system job), so
+    // it runs under the explicit runAsSystem() escape — formerly it "worked"
+    // only because the old guardrail was a prod no-op (LMS-L2). The deleteMany/
+    // updateMany/findMany on PHI models below would otherwise fail closed.
+    await runAsSystem(() => this.sweep());
+  }
+
+  private async sweep(): Promise<void> {
     this.log.log("Retention sweep starting");
     const now = Date.now();
 

@@ -11,6 +11,7 @@ import { CurrentUserService } from "./current-user.service";
 import { IS_PUBLIC_KEY } from "./public.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import type { StaffContext } from "../tenant/tenant.types";
+import { runAsSystem, setOrgContext } from "../tenant/tenant-context";
 
 export type AuthedRequest = Request & {
   auth?: { clerkUserId: string; sessionId?: string };
@@ -53,10 +54,16 @@ export class ClerkAuthGuard implements CanActivate {
     req.auth = { clerkUserId, sessionId: payload.sid };
     req.user = { id: user.id, email: user.email };
 
-    const staff = await this.prisma.staff.findUnique({
-      where: { userId: user.id },
-      include: { org: { select: { jurisdiction: true } } },
-    });
+    // Bootstrap lookup: this is the query that *discovers* the actor's org, so
+    // it can't itself be org-scoped (chicken-and-egg). userId is globally
+    // unique, so a system read returns exactly this user's single Staff row.
+    const staff = await runAsSystem(
+      async () =>
+        await this.prisma.staff.findUnique({
+          where: { userId: user.id },
+          include: { org: { select: { jurisdiction: true } } },
+        }),
+    );
     if (staff) {
       req.staff = {
         staffId: staff.id,
@@ -66,6 +73,9 @@ export class ClerkAuthGuard implements CanActivate {
         roleCode: staff.roleCode,
         jurisdiction: staff.org.jurisdiction,
       };
+      // Populate the request's tenant scope so every PHI query for the rest of
+      // the request is auto-scoped to this org by the Prisma guardrail.
+      setOrgContext(staff.orgId);
     }
     return true;
   }

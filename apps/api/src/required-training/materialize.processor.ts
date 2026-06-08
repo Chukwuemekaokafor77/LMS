@@ -5,6 +5,7 @@ import { Queue, type Job } from "bullmq";
 import { TrainingCadence } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { QUEUES } from "../queue/queue.module";
+import { runAsSystem } from "../tenant/tenant-context";
 
 type Jobs =
   | { name: "materialize"; data: { requiredTrainingId: string } }
@@ -32,17 +33,22 @@ export class MaterializeProcessor extends WorkerHost {
   }
 
   async process(job: Job<Jobs["data"]>): Promise<void> {
-    if (job.name === "materialize") {
-      await this.materializeForRequiredTraining(
-        (job.data as { requiredTrainingId: string }).requiredTrainingId,
-      );
-    } else if (job.name === "materialize-for-staff") {
-      await this.materializeForNewStaff(
-        (job.data as { staffId: string }).staffId,
-      );
-    } else {
-      this.log.warn(`Unknown materialize job ${job.name}`);
-    }
+    // Background job (no HTTP context). Each branch operates within one org
+    // (derived from the RequiredTraining/Staff it looks up) and writes orgId
+    // explicitly on every Assignment it creates. Runs as system.
+    await runAsSystem(async () => {
+      if (job.name === "materialize") {
+        await this.materializeForRequiredTraining(
+          (job.data as { requiredTrainingId: string }).requiredTrainingId,
+        );
+      } else if (job.name === "materialize-for-staff") {
+        await this.materializeForNewStaff(
+          (job.data as { staffId: string }).staffId,
+        );
+      } else {
+        this.log.warn(`Unknown materialize job ${job.name}`);
+      }
+    });
   }
 
   /** Walk every staff matching the role+site, create initial Assignment if missing. */

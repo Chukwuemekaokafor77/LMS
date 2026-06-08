@@ -48,7 +48,6 @@ export class PhiAccessInterceptor implements NestInterceptor {
         throw new InternalServerErrorException(msg);
       }
       // In prod, just log it so we don't break the app, but we should alert.
-      // eslint-disable-next-line no-console
       console.error(msg);
       return next.handle();
     }
