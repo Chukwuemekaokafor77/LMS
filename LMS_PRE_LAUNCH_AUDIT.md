@@ -138,7 +138,7 @@ These were verified by code-read this session and are genuinely good — the poi
 - **Root cause:** The only thing preventing duplicate `Assignment`s on a re-run is the `@@unique([staffId, moduleId, dueAt])` constraint, but `dueAt` is computed as `Date.now() + graceDays` **at run time** — so two runs even milliseconds apart produce different `dueAt` and both succeed. A retried/re-enqueued materialize job (or an operator re-saving a `RequiredTraining`) silently creates duplicate assignments for the same staff+module. LMS-C2 tests the cadence/grace/expiry **math** but intentionally does **not** assert idempotency (it doesn't hold).
 - **Fix:** Make materialization idempotent regardless of timing — e.g. dedupe on an existing open assignment for `(staffId, moduleId, requiredTrainingId)` before creating, or derive a deterministic `dueAt` (truncate to the day, or base it on a fixed anchor) so the unique constraint actually catches re-runs.
 - **Verify:** Running `materialize` twice for the same `RequiredTraining` yields one assignment per matching staff.
-- **Effort:** S. **Status:** `[ ]`
+- **Effort:** S. **Status:** `[x]` (done 2026-06-08, merged PR #9; CI green). Added a shared `ensureAssignment` helper that dedupes on an existing *current* assignment (ASSIGNED/IN_PROGRESS/COMPLETED) for `(staffId, requiredTrainingId)` before creating, so re-runs are no-ops regardless of timing; a renewal after the prior lapses (EXPIRED/REVOKED) is still allowed, and the unique constraint stays as a race backstop. Both materialize paths use it. Tests cover re-run idempotency (one row) and renewal-after-EXPIRED (two rows).
 
 ---
 
@@ -207,6 +207,7 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-06-08_ — **LMS-M5 done (PR #9, CI green).** Required-training materialization is now idempotent — dedupes on an existing current assignment for `(staffId, requiredTrainingId)` before creating, so retried jobs / re-saved RequiredTrainings no longer duplicate assignments (renewal after a lapse still works). **Only LMS-M1 (rotate live Clerk keys — an ops task) remains.**
 - _2026-06-08_ — **LMS-M3 done (PR #8, CI green).** All nine `@Body()`/`@Query()` handlers confirmed backed by class-validator DTOs; added a reject-path e2e proving the global ValidationPipe 400s on unknown/wrong-typed/missing/bad-enum input (body + query). Remaining: LMS-M1, LMS-M5.
 - _2026-06-08_ — **LMS-M2 done (PR #7, CI green).** `PrismaService` now `extends PrismaClient` (constructor returns the guardrail-extended client) instead of the hand-rolled getter wrapper — models + raw helpers inherited and typed, no `as any`, new models auto-available, guardrail + lifecycle intact. Retired the three stopgaps that pointed here (C2 `$transaction` bind, H3 health-pingCheck cast, H3 `tx` annotations). Remaining: LMS-M1/M3/M5.
 - _2026-06-08_ — **LMS-M4 done (PR #6, CI green).** Audit events now record against the actor's **User** id (the FK target) instead of a Staff id, so cert-issued / attempt-completed / required-training / invite-revoke events actually persist instead of silently failing the FK and being swallowed. Added `userId` to `StaffContext`; resolved the userId at the processor/service sites. Test asserts the `certificate.issued` event lands with the right `actorId`. Remaining: LMS-M1/M2/M3/M5.
