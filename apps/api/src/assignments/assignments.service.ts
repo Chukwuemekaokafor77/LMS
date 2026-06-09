@@ -154,15 +154,14 @@ export class AssignmentsService {
       return a;
     });
 
+    // AuditEvent.actorId is a User id (LMS-M4), so resolve the staff's userId.
+    const actorStaff = await this.prisma.staff.findUnique({
+      where: { id: input.staffId },
+      select: { userId: true, orgId: true },
+    });
     await this.audit.record({
-      actorId: input.staffId,
-      orgId:
-        (
-          await this.prisma.staff.findUnique({
-            where: { id: input.staffId },
-            select: { orgId: true },
-          })
-        )?.orgId ?? null,
+      actorId: actorStaff?.userId ?? null,
+      orgId: actorStaff?.orgId ?? null,
       action: passed ? "assignment.completed" : "assignment.attempt_failed",
       entityType: "Assignment",
       entityId: attempt.assignmentId,

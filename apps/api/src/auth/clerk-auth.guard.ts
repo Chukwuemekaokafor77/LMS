@@ -67,6 +67,7 @@ export class ClerkAuthGuard implements CanActivate {
     if (staff) {
       req.staff = {
         staffId: staff.id,
+        userId: staff.userId,
         orgId: staff.orgId,
         siteId: staff.siteId,
         orgPermission: staff.orgPermission,

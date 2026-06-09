@@ -89,7 +89,7 @@ export class CertificateProcessor extends WorkerHost {
     });
 
     await this.audit.record({
-      actorId: assignment.staffId,
+      actorId: assignment.staff.userId,
       orgId: assignment.staff.orgId,
       action: "certificate.issued",
       entityType: "Certificate",

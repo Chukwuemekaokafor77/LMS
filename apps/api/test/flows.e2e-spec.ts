@@ -67,6 +67,39 @@ describe("LMS-C2 flows", () => {
       expect(certs).toHaveLength(1);
       expect(certs[0].sha256).toBeTruthy();
     });
+
+    it("records a certificate.issued audit event against the actor's User id (LMS-M4)", async () => {
+      const a = await db.assignment.create({
+        data: {
+          orgId: base.orgId,
+          staffId: base.workerStaffId,
+          moduleId: base.moduleId,
+          status: "COMPLETED",
+          dueAt: new Date(),
+          completedAt: new Date(),
+        },
+      });
+      await db.attempt.create({
+        data: {
+          orgId: base.orgId,
+          assignmentId: a.id,
+          passed: true,
+          scorePct: 100,
+          submittedAt: new Date(),
+          attestationHash: "hash",
+        },
+      });
+
+      await t.app.get(CertificateProcessor, { strict: false }).process(job("issue", { assignmentId: a.id }));
+
+      // Before LMS-M4 this silently failed (actorId was a Staff id, but the FK
+      // references User.id) and AuditService swallowed the error → zero rows.
+      const event = await db.auditEvent.findFirst({
+        where: { action: "certificate.issued" },
+      });
+      expect(event).not.toBeNull();
+      expect(event!.actorId).toBe(base.workerUserId);
+    });
   });
 
   describe("attempt scoring", () => {

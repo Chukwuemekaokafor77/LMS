@@ -106,7 +106,7 @@ export class InvitationsService {
       });
 
     await this.audit.record({
-      actorId: actor.staffId,
+      actorId: actor.userId,
       orgId: actor.orgId,
       action: "staff.invited",
       entityType: "Invitation",
@@ -129,7 +129,7 @@ export class InvitationsService {
       .getClient()
       .invitations.revokeInvitation(invitationId);
     await this.audit.record({
-      actorId: actor.staffId,
+      actorId: actor.userId,
       orgId: actor.orgId,
       action: "staff.invitation_revoked",
       entityType: "Invitation",
