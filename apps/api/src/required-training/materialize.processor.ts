@@ -68,34 +68,15 @@ export class MaterializeProcessor extends WorkerHost {
       select: { id: true },
     });
 
-    const dueAt = new Date(Date.now() + rt.graceDays * 86_400_000);
-    const cadenceDays = CADENCE_DAYS[rt.cadence];
-
     for (const s of staff) {
-      try {
-        const a = await this.prisma.assignment.create({
-          data: {
-            orgId: rt.orgId,
-            staffId: s.id,
-            moduleId: rt.moduleId,
-            requiredTrainingId: rt.id,
-            dueAt,
-            expiresAt:
-              cadenceDays === null
-                ? null
-                : new Date(dueAt.getTime() + cadenceDays * 86_400_000),
-          },
-        });
-        await this.emailQ.add("assignment.assigned", { assignmentId: a.id });
-      } catch (e) {
-        // Unique violation = staff already has the assignment for that dueAt; fine.
-        if ((e as { code?: string }).code !== "P2002") {
-          this.log.error(
-            `Failed to create assignment for staff ${s.id}`,
-            e as Error,
-          );
-        }
-      }
+      await this.ensureAssignment({
+        orgId: rt.orgId,
+        staffId: s.id,
+        moduleId: rt.moduleId,
+        requiredTrainingId: rt.id,
+        graceDays: rt.graceDays,
+        cadence: rt.cadence,
+      });
     }
   }
 
@@ -113,30 +94,71 @@ export class MaterializeProcessor extends WorkerHost {
       },
     });
     for (const rt of rts) {
-      const dueAt = new Date(Date.now() + rt.graceDays * 86_400_000);
-      const cadenceDays = CADENCE_DAYS[rt.cadence];
-      try {
-        const a = await this.prisma.assignment.create({
-          data: {
-            orgId: staff.orgId,
-            staffId: staff.id,
-            moduleId: rt.moduleId,
-            requiredTrainingId: rt.id,
-            dueAt,
-            expiresAt:
-              cadenceDays === null
-                ? null
-                : new Date(dueAt.getTime() + cadenceDays * 86_400_000),
-          },
-        });
-        await this.emailQ.add("assignment.assigned", { assignmentId: a.id });
-      } catch (e) {
-        if ((e as { code?: string }).code !== "P2002") {
-          this.log.error(
-            `Failed to create assignment for staff ${staffId}`,
-            e as Error,
-          );
-        }
+      await this.ensureAssignment({
+        orgId: staff.orgId,
+        staffId: staff.id,
+        moduleId: rt.moduleId,
+        requiredTrainingId: rt.id,
+        graceDays: rt.graceDays,
+        cadence: rt.cadence,
+      });
+    }
+  }
+
+  /**
+   * Idempotently create the initial Assignment for a staff×required-training.
+   *
+   * Materialization must be safe to re-run (jobs retry; an admin may re-save a
+   * RequiredTraining) — but `dueAt` is `now + graceDays`, so the
+   * `@@unique([staffId, moduleId, dueAt])` constraint can't catch a re-run that
+   * lands on a different millisecond (LMS-M5). So we dedupe explicitly: if the
+   * staff already has a *current* assignment (ASSIGNED/IN_PROGRESS/COMPLETED)
+   * for this required-training, do nothing. A renewal after the prior lapses
+   * (EXPIRED/REVOKED) is still allowed. The unique constraint remains as a
+   * race backstop.
+   */
+  private async ensureAssignment(args: {
+    orgId: string;
+    staffId: string;
+    moduleId: string;
+    requiredTrainingId: string;
+    graceDays: number;
+    cadence: TrainingCadence;
+  }): Promise<void> {
+    const existing = await this.prisma.assignment.findFirst({
+      where: {
+        staffId: args.staffId,
+        requiredTrainingId: args.requiredTrainingId,
+        status: { in: ["ASSIGNED", "IN_PROGRESS", "COMPLETED"] },
+      },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    const dueAt = new Date(Date.now() + args.graceDays * 86_400_000);
+    const cadenceDays = CADENCE_DAYS[args.cadence];
+    try {
+      const a = await this.prisma.assignment.create({
+        data: {
+          orgId: args.orgId,
+          staffId: args.staffId,
+          moduleId: args.moduleId,
+          requiredTrainingId: args.requiredTrainingId,
+          dueAt,
+          expiresAt:
+            cadenceDays === null
+              ? null
+              : new Date(dueAt.getTime() + cadenceDays * 86_400_000),
+        },
+      });
+      await this.emailQ.add("assignment.assigned", { assignmentId: a.id });
+    } catch (e) {
+      // Race backstop: a concurrent run created it between our check and insert.
+      if ((e as { code?: string }).code !== "P2002") {
+        this.log.error(
+          `Failed to create assignment for staff ${args.staffId}`,
+          e as Error,
+        );
       }
     }
   }
