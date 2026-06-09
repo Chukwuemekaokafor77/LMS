@@ -124,7 +124,7 @@ These were verified by code-read this session and are genuinely good — the poi
 - **Root cause:** `ValidationPipe` is global and several DTOs exist, but the roadmap's "DTO on every body/query handler" and "smoke-test that unknown fields / wrong types reject with 400" are unverified.
 - **Fix:** Audit every controller method that takes `@Body()`/`@Query()` for a class-validator DTO; add a small e2e that POSTs an unknown field and a wrong-typed field to a representative endpoint and asserts 400.
 - **Verify:** Reject-path e2e green; no controller body/query param typed as a bare `any`/inline object.
-- **Effort:** S. **Status:** `[ ]`
+- **Effort:** S. **Status:** `[x]` (done 2026-06-08, merged PR #8; CI green). Audited all nine `@Body()`/`@Query()` handlers — each is backed by a class-validator DTO (no bare `any`/inline). Added [test/reject-path.e2e-spec.ts](apps/api/test/reject-path.e2e-spec.ts): the global `ValidationPipe` returns 400 for unknown-field / wrong-type / missing-required / bad-enum on a body endpoint and unknown / wrong-typed query params on a query endpoint, with a valid-body 201 sanity case.
 
 ### LMS-M4 · Audit trail silently broken for staff-initiated actions 🟡
 - **Where:** [apps/api/src/certificates/certificate.processor.ts](apps/api/src/certificates/certificate.processor.ts), [apps/api/src/assignments/assignments.service.ts](apps/api/src/assignments/assignments.service.ts), [apps/api/src/staff/invitations.service.ts](apps/api/src/staff/invitations.service.ts) — via [apps/api/src/audit/audit.service.ts](apps/api/src/audit/audit.service.ts).
@@ -175,8 +175,8 @@ Supersedes the `[ ]` boxes under "LMS Phase 1" in `ROADMAP.md` (in the `psw` rep
 | ≥60% service coverage | `[x]` gated in CI — 60.81% stmts (PR #5) | LMS-C2 ✓ |
 | class-validator + class-transformer | `[x]` installed | — |
 | Global `ValidationPipe` | `[x]` `main.ts` | — |
-| DTOs on every body/query handler | `[~]` partial, unconfirmed | LMS-M3 |
-| Reject-unknown-field smoke test | `[ ]` | LMS-M3 |
+| DTOs on every body/query handler | `[x]` all 9 handlers audited (PR #8) | LMS-M3 ✓ |
+| Reject-unknown-field smoke test | `[x]` reject-path e2e (PR #8) | LMS-M3 ✓ |
 | Base `PhiController` default-on | `[x]` interceptor global; the no-op base class was deleted in LMS-H3 | LMS-L1 ✓ / LMS-H3 |
 | `@SkipPhiAccess()` decorator | `[x]` exists + used | — |
 | Migrate PHI controllers to annotated | `[x]` all annotated | — |
@@ -207,6 +207,7 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-06-08_ — **LMS-M3 done (PR #8, CI green).** All nine `@Body()`/`@Query()` handlers confirmed backed by class-validator DTOs; added a reject-path e2e proving the global ValidationPipe 400s on unknown/wrong-typed/missing/bad-enum input (body + query). Remaining: LMS-M1, LMS-M5.
 - _2026-06-08_ — **LMS-M2 done (PR #7, CI green).** `PrismaService` now `extends PrismaClient` (constructor returns the guardrail-extended client) instead of the hand-rolled getter wrapper — models + raw helpers inherited and typed, no `as any`, new models auto-available, guardrail + lifecycle intact. Retired the three stopgaps that pointed here (C2 `$transaction` bind, H3 health-pingCheck cast, H3 `tx` annotations). Remaining: LMS-M1/M3/M5.
 - _2026-06-08_ — **LMS-M4 done (PR #6, CI green).** Audit events now record against the actor's **User** id (the FK target) instead of a Staff id, so cert-issued / attempt-completed / required-training / invite-revoke events actually persist instead of silently failing the FK and being swallowed. Added `userId` to `StaffContext`; resolved the userId at the processor/service sites. Test asserts the `certificate.issued` event lands with the right `actorId`. Remaining: LMS-M1/M2/M3/M5.
 - _2026-06-08_ — **LMS-C2 done (PR #5, CI green).** Real-DB tests on the C1 harness for certificate idempotency, attempt scoring (single/multiple/true-false + the 67% pass boundary), required-training materialization (grace/expiry math), and signature-verified webhooks for all three providers (Stripe/Mux/Clerk — bad sig→400, valid→idempotent, real verification incl. Mux). Wired `vitest run --coverage` with a **60% service-layer floor** (thin SDK adapters excluded); landed at 60.81% stmts / 62.46% lines (thin margin). Fixed a latent `PrismaService.$transaction`/`$queryRaw`/`$executeRaw` unbound-`this` bug that broke transactions in prod (bound to the client; full fix is M2). Tests run serially (`fileParallelism:false`) against the shared DB. **Only LMS-M1–M5 remain** (M1 key rotation, M2 extend PrismaClient, M3 DTO reject-path, M4 audit trail, M5 materialization idempotency).
