@@ -213,5 +213,54 @@ describe("LMS-C2 flows", () => {
       expect(assignments).toHaveLength(1);
       expect(assignments[0].expiresAt).toBeNull(); // ONCE → no expiry
     });
+
+    it("is idempotent — re-running does not duplicate the assignment (LMS-M5)", async () => {
+      const rt = await db.requiredTraining.create({
+        data: {
+          orgId: base.orgId,
+          siteId: base.siteId,
+          roleCode: base.roleCode,
+          moduleId: base.moduleId,
+          cadence: "ANNUAL",
+          graceDays: 30,
+          jurisdiction: "NB",
+        },
+      });
+      const proc = t.app.get(MaterializeProcessor, { strict: false });
+      await proc.process(job("materialize", { requiredTrainingId: rt.id }));
+      await proc.process(job("materialize", { requiredTrainingId: rt.id }));
+
+      const assignments = await db.assignment.findMany({
+        where: { staffId: base.workerStaffId, requiredTrainingId: rt.id },
+      });
+      expect(assignments).toHaveLength(1);
+    });
+
+    it("re-materializes once the prior assignment has lapsed (EXPIRED)", async () => {
+      const rt = await db.requiredTraining.create({
+        data: {
+          orgId: base.orgId,
+          siteId: base.siteId,
+          roleCode: base.roleCode,
+          moduleId: base.moduleId,
+          cadence: "ANNUAL",
+          graceDays: 30,
+          jurisdiction: "NB",
+        },
+      });
+      const proc = t.app.get(MaterializeProcessor, { strict: false });
+      await proc.process(job("materialize", { requiredTrainingId: rt.id }));
+      // Lapse the first assignment, then re-run — a renewal is expected.
+      await db.assignment.updateMany({
+        where: { staffId: base.workerStaffId, requiredTrainingId: rt.id },
+        data: { status: "EXPIRED" },
+      });
+      await proc.process(job("materialize", { requiredTrainingId: rt.id }));
+
+      const assignments = await db.assignment.findMany({
+        where: { staffId: base.workerStaffId, requiredTrainingId: rt.id },
+      });
+      expect(assignments).toHaveLength(2); // lapsed + renewed
+    });
   });
 });
