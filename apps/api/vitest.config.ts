@@ -20,6 +20,10 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./test/setup.ts"],
     include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
+    // The integration/e2e suites share one Postgres and wipe+seed it, so they
+    // must not run concurrently or they clobber each other's fixtures. Run files
+    // serially (tests within a file already run sequentially).
+    fileParallelism: false,
     alias: {
       "@src": path.resolve(__dirname, "./src"),
     },
