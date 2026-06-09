@@ -92,7 +92,7 @@ export class RequiredTrainingService {
     });
 
     await this.audit.record({
-      actorId: actor.staffId,
+      actorId: actor.userId,
       orgId: actor.orgId,
       action: "required_training.created",
       entityType: "RequiredTraining",
@@ -114,7 +114,7 @@ export class RequiredTrainingService {
     if (!rt || rt.orgId !== actor.orgId) throw new NotFoundException();
     await this.prisma.requiredTraining.delete({ where: { id } });
     await this.audit.record({
-      actorId: actor.staffId,
+      actorId: actor.userId,
       orgId: actor.orgId,
       action: "required_training.deleted",
       entityType: "RequiredTraining",

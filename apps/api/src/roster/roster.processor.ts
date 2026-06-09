@@ -44,6 +44,26 @@ export class RosterProcessor extends WorkerHost {
     });
     if (!imp) return;
 
+    // The uploader's User id, so the per-row invites can be audited against a
+    // real actor (AuditEvent.actorId is a User id — LMS-M4).
+    const uploader = await this.prisma.staff.findUnique({
+      where: { id: imp.uploadedById },
+      select: { userId: true },
+    });
+    if (!uploader) {
+      this.log.error(
+        `Roster import ${importId}: uploader staff ${imp.uploadedById} not found`,
+      );
+      await this.prisma.rosterImport.update({
+        where: { id: importId },
+        data: {
+          status: "FAILED",
+          errors: [{ row: 0, reason: "uploader not found" }] as object,
+        },
+      });
+      return;
+    }
+
     await this.prisma.rosterImport.update({
       where: { id: importId },
       data: { status: "PROCESSING" },
@@ -76,6 +96,7 @@ export class RosterProcessor extends WorkerHost {
 
       const actorStub = {
         staffId: imp.uploadedById,
+        userId: uploader.userId,
         orgId: imp.orgId,
         siteId: null,
         orgPermission: "ORG_ADMIN" as const,

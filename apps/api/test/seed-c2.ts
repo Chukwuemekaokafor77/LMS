@@ -16,6 +16,7 @@ export type C2Base = {
   orgId: string;
   siteId: string;
   workerStaffId: string;
+  workerUserId: string;
   roleCode: string;
   moduleId: string;
   quizId: string;
@@ -114,6 +115,7 @@ export async function seedC2Base(db: PrismaClient): Promise<C2Base> {
     orgId: org.id,
     siteId: site.id,
     workerStaffId: worker.id,
+    workerUserId: user.id,
     roleCode: ROLE,
     moduleId: mod.id,
     quizId: quiz.id,
