@@ -2,43 +2,36 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { tenantIsolationExtension } from "./tenant-isolation.extension";
 
+/**
+ * The application's Prisma client (LMS-M2).
+ *
+ * `PrismaService` *is* the tenant-guardrail-extended client: the constructor
+ * returns the `$extends`-wrapped client, so every `this.prisma.<model>` call
+ * goes through the LMS-H1 guardrail, and — because the class also `extends
+ * PrismaClient` — every model delegate and raw helper (`$transaction`,
+ * `$queryRaw`, …) is inherited and fully typed. No manual per-model getters, no
+ * `as any`, and a newly-added Prisma model is available without touching this
+ * file. The returned extended client retains the class's lifecycle methods, so
+ * Nest still drives `onModuleInit`/`onModuleDestroy`.
+ *
+ * (Verified that the extension still applies through `$transaction` callbacks
+ * and that fail-closed/injection isolation holds — see the tenant tests.)
+ */
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  private readonly client = new PrismaClient().$extends(tenantIsolationExtension);
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  constructor() {
+    super();
+    return this.$extends(tenantIsolationExtension) as unknown as PrismaService;
+  }
 
   async onModuleInit() {
-    await (this.client as any).$connect();
+    await this.$connect();
   }
 
   async onModuleDestroy() {
-    await (this.client as any).$disconnect();
+    await this.$disconnect();
   }
-
-  // Expose the client properties
-  get staff() { return this.client.staff; }
-  get assignment() { return this.client.assignment; }
-  get attempt() { return this.client.attempt; }
-  get certificate() { return this.client.certificate; }
-  get rosterImport() { return this.client.rosterImport; }
-  get user() { return this.client.user; }
-  get organization() { return this.client.organization; }
-  get site() { return this.client.site; }
-  get role() { return this.client.role; }
-  get module() { return this.client.module; }
-  get lesson() { return this.client.lesson; }
-  get quiz() { return this.client.quiz; }
-  get question() { return this.client.question; }
-  get requiredTraining() { return this.client.requiredTraining; }
-  get subscription() { return this.client.subscription; }
-  get auditEvent() { return this.client.auditEvent; }
-  get recordAccessLog() { return this.client.recordAccessLog; }
-
-  // Generic access. These MUST be bound to the underlying client: callers use
-  // them as `this.prisma.$transaction(fn)`, which would otherwise invoke the
-  // method with `this` = PrismaService (not the PrismaClient) and crash inside
-  // Prisma ("Cannot read properties of undefined (reading 'adapter')"). The real
-  // fix is to extend PrismaClient (LMS-M2); this binding is the stopgap.
-  get $queryRaw() { return (this.client as any).$queryRaw.bind(this.client); }
-  get $executeRaw() { return (this.client as any).$executeRaw.bind(this.client); }
-  get $transaction() { return (this.client as any).$transaction.bind(this.client); }
 }
