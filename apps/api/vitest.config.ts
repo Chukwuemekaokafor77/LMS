@@ -20,15 +20,28 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./test/setup.ts"],
     include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
+    // The integration/e2e suites share one Postgres and wipe+seed it, so they
+    // must not run concurrently or they clobber each other's fixtures. Run files
+    // serially (tests within a file already run sequentially).
+    fileParallelism: false,
     alias: {
       "@src": path.resolve(__dirname, "./src"),
     },
-    // Coverage plumbing (LMS-H2). The 60% floor on the service layer is gated
-    // with LMS-C2, once real service tests exist — see LMS_PRE_LAUNCH_AUDIT.md.
+    // Service-layer coverage floor (LMS-C2). Thin SDK adapters are stubbed in
+    // the e2e harness (no real network in CI), so they carry no coverable
+    // business logic and are excluded — the floor targets the services that
+    // actually hold logic worth testing.
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
       include: ["src/**/*.service.ts"],
+      exclude: [
+        "src/auth/clerk.service.ts",
+        "src/storage/s3.service.ts",
+        "src/video/mux.service.ts",
+        "src/billing/stripe.service.ts",
+      ],
+      thresholds: { lines: 60, functions: 60, statements: 60 },
     },
   },
 });

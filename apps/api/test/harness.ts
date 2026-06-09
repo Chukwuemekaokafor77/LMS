@@ -23,23 +23,30 @@ import { tenantScopeMiddleware } from "../src/tenant/tenant-scope.middleware";
  * is the production wiring.
  */
 
+// Stable webhook secrets the signature tests sign with. The Clerk/svix one must
+// be a valid base64 body after the `whsec_` prefix.
+export const TEST_STRIPE_WEBHOOK_SECRET = "whsec_stripe_dummy";
+export const TEST_MUX_WEBHOOK_SECRET = "mux_webhook_dummy_secret";
+export const TEST_CLERK_WEBHOOK_SECRET =
+  "whsec_" + Buffer.from("clerk-webhook-test-secret-key!!!").toString("base64");
+
 // Dummy config so every getOrThrow at module init succeeds. DATABASE_URL and
 // REDIS_URL are the only ones that must be real (Prisma + BullMQ connect).
 function setDummyEnv() {
   const dummies: Record<string, string> = {
     CLERK_SECRET_KEY: "sk_test_dummy",
-    CLERK_WEBHOOK_SECRET: "whsec_dummy",
+    CLERK_WEBHOOK_SECRET: TEST_CLERK_WEBHOOK_SECRET,
     AWS_REGION: "ca-central-1",
     AWS_S3_BUCKET: "test-bucket",
     AWS_ACCESS_KEY_ID: "test",
     AWS_SECRET_ACCESS_KEY: "test",
     MUX_TOKEN_ID: "test",
     MUX_TOKEN_SECRET: "test",
-    MUX_WEBHOOK_SECRET: "test",
+    MUX_WEBHOOK_SECRET: TEST_MUX_WEBHOOK_SECRET,
     MUX_SIGNING_KEY_ID: "test",
     RESEND_API_KEY: "re_test",
     STRIPE_SECRET_KEY: "sk_test_dummy",
-    STRIPE_WEBHOOK_SECRET: "whsec_stripe_dummy",
+    STRIPE_WEBHOOK_SECRET: TEST_STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_PER_SEAT_ID: "price_test",
     EMAIL_FROM: "test@example.com",
     WEB_BASE_URL: "http://localhost:3000",
@@ -85,21 +92,28 @@ export type TestApp = {
   anon: () => AuthedRequests;
 };
 
-export async function setupTestApp(): Promise<TestApp> {
+export type SetupOptions = {
+  /** Stub MuxService (default true). Pass false to exercise real Mux webhook
+   *  signature verification (the video playback test still uses the stub). */
+  stubMux?: boolean;
+};
+
+export async function setupTestApp(opts: SetupOptions = {}): Promise<TestApp> {
+  const { stubMux = true } = opts;
   setDummyEnv();
 
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ClerkService)
     .useValue(clerkStub)
     .overrideProvider(S3Service)
-    .useValue(s3Stub)
-    .overrideProvider(MuxService)
-    .useValue(muxStub)
-    .compile();
+    .useValue(s3Stub);
+  if (stubMux) {
+    builder = builder.overrideProvider(MuxService).useValue(muxStub);
+  }
+  const moduleRef = await builder.compile();
 
-  const app = moduleRef.createNestApplication();
+  // rawBody mirrors main.ts — the webhook controllers read req.rawBody.
+  const app = moduleRef.createNestApplication({ rawBody: true });
   // Mirror main.ts exactly.
   app.use(tenantScopeMiddleware);
   app.useGlobalPipes(
