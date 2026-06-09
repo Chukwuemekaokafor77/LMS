@@ -93,10 +93,11 @@ jobs:
             --to-schema-datamodel ./prisma/schema.prisma \
             --exit-code
 
-      # Coverage floor (60% on src/**/*.service.ts) is gated with LMS-C2, once
-      # real service tests exist — see LMS_PRE_LAUNCH_AUDIT.md.
-      - name: Run API tests
-        run: pnpm --filter @maple-care/api test
+      # Runs the unit + real-DB integration/e2e suites against the service DBs
+      # above, and enforces the LMS-C2 service-layer coverage floor (60%, with
+      # thin SDK adapters excluded — see vitest.config.ts).
+      - name: Run API tests + coverage gate
+        run: pnpm --filter @maple-care/api exec vitest run --coverage
 
       - name: Build API
         run: pnpm --filter @maple-care/api build

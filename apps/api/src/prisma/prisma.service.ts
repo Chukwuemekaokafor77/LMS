@@ -33,8 +33,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get auditEvent() { return this.client.auditEvent; }
   get recordAccessLog() { return this.client.recordAccessLog; }
 
-  // Generic access
-  get $queryRaw() { return (this.client as any).$queryRaw; }
-  get $executeRaw() { return (this.client as any).$executeRaw; }
-  get $transaction() { return (this.client as any).$transaction; }
+  // Generic access. These MUST be bound to the underlying client: callers use
+  // them as `this.prisma.$transaction(fn)`, which would otherwise invoke the
+  // method with `this` = PrismaService (not the PrismaClient) and crash inside
+  // Prisma ("Cannot read properties of undefined (reading 'adapter')"). The real
+  // fix is to extend PrismaClient (LMS-M2); this binding is the stopgap.
+  get $queryRaw() { return (this.client as any).$queryRaw.bind(this.client); }
+  get $executeRaw() { return (this.client as any).$executeRaw.bind(this.client); }
+  get $transaction() { return (this.client as any).$transaction.bind(this.client); }
 }
