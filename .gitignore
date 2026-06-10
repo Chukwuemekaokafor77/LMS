@@ -25,6 +25,9 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 
+# Claude Code (local agent config, skills, memory — not shared)
+.claude/
+
 # Prisma
 apps/api/prisma/migrations/dev.db*
 
