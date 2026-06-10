@@ -2,34 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Company design language — aligned to ElderCare Companion's "Modern Premium"
+ * system (psw/frontend/styles/theme.ts): vibrant purple primary (#7C3AED),
+ * cyan secondary (#06B6D4), slate neutrals. Expressed here as shadcn-style HSL
+ * tokens so the Tailwind/Next web app matches the React-Native app's palette.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --primary: 348 83% 47%;
+    --background: 210 40% 98%; /* slate-50 */
+    --foreground: 222 47% 11%; /* slate-900 */
+    --primary: 262 83% 58%; /* #7C3AED purple */
     --primary-foreground: 0 0% 100%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 348 83% 47%;
-    --radius: 0.5rem;
+    --secondary: 189 94% 43%; /* #06B6D4 cyan */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 96%; /* slate-100 */
+    --muted-foreground: 215 16% 47%; /* slate-500 */
+    --accent: 210 40% 96%; /* slate-100 */
+    --accent-foreground: 222 47% 11%;
+    --border: 214 32% 91%; /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --primary: 348 83% 55%;
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 96%; /* slate-100 */
+    --primary: 262 83% 64%; /* lifted purple for dark surfaces */
     --primary-foreground: 0 0% 100%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 348 83% 55%;
+    --secondary: 189 94% 48%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 217 33% 17%; /* slate-800 */
+    --muted-foreground: 215 20% 65%; /* slate-400 */
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 96%;
+    --border: 215 25% 27%; /* slate-700 */
+    --input: 215 25% 27%;
+    --ring: 262 83% 64%;
   }
 }
 
@@ -37,7 +47,53 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.15);
+  }
+}
+
+@layer utilities {
+  /* ElderCare "ocean" gradient (cyan → purple) for brand marks + accents. */
+  .bg-brand-gradient {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--secondary)),
+      hsl(var(--primary))
+    );
+  }
+  .text-brand-gradient {
+    background-image: linear-gradient(
+      120deg,
+      hsl(var(--primary)),
+      hsl(var(--secondary))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-hero-glow {
+    background: radial-gradient(
+      60% 55% at 50% -10%,
+      hsl(var(--primary) / 0.12),
+      transparent 70%
+    );
+  }
+  .bg-cta-glow {
+    background: radial-gradient(
+      50% 80% at 50% 0%,
+      hsl(var(--secondary) / 0.1),
+      transparent
+    );
   }
 }
