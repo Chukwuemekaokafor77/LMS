@@ -146,6 +146,7 @@ These were verified by code-read this session and are genuinely good — the poi
 - **Fix / Decision:** **Remove Clerk completely** (owner decision, 2026-06-17). Target architecture = federate identity from ElderCare's homegrown, Canadian-resident auth — ElderCare becomes an OIDC provider and LMS drops Clerk. See the `psw` repo `ROADMAP.md` Phase 14 + the auth-residency decision note. (Caveat: making ElderCare an OIDC provider is a security-sensitive change to an already-audited auth core — needs its own review when undertaken.)
 - **Verify:** No Clerk dependency in the auth path; identity data resides in Canada; the residency claim holds end-to-end.
 - **Effort:** L (auth-core change). **Status:** `[~]` **decided — resolution = full Clerk removal; lands when LMS resumes from paused.** Do not start before a resume trigger. If any PHI pilot is contemplated *before* the removal lands, a signed Clerk DPA + documented cross-border disclosure is the minimum interim posture — but the decision is removal, not mitigation.
+  - **Update (2026-06-17) — NOT pursuing now.** The owner evaluated building this in the near term and **explicitly deferred it**: the ElderCare MVP launch + a 3-agency pilot take priority, and the OIDC-provider prerequisite is a multi-week, security-reviewed cross-repo build with no near-term payoff. LMS **stays paused on Clerk**; this finding remains **open** as the standing residency blocker for any future LMS PHI pilot. The decommission plan below is preserved for whenever a resume trigger fires — no work started.
 
 ---
 
