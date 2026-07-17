@@ -32,7 +32,25 @@ export class AssignmentsService {
         module: {
           include: {
             lessons: { orderBy: { position: "asc" } },
-            quiz: { include: { questions: { orderBy: { position: "asc" } } } },
+            quiz: {
+              include: {
+                // Learner-facing read: never ship the answer key. correctIdx /
+                // explain* stay server-side — scoring re-reads them internally
+                // in submitAttempt.
+                questions: {
+                  orderBy: { position: "asc" },
+                  select: {
+                    id: true,
+                    promptEn: true,
+                    promptFr: true,
+                    type: true,
+                    choicesEn: true,
+                    choicesFr: true,
+                    position: true,
+                  },
+                },
+              },
+            },
           },
         },
         attempts: { orderBy: { startedAt: "desc" } },
