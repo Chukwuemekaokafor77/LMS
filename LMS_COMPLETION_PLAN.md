@@ -1,0 +1,338 @@
+# Maple Care LMS — Completion & ElderCare Integration Plan
+
+**Purpose.** A fresh-session-ready plan to (1) finish the LMS and (2) integrate it
+with ElderCare so the two form one platform. Complements
+[LMS_PRE_LAUNCH_AUDIT.md](LMS_PRE_LAUNCH_AUDIT.md) (the hardening punch list) — that
+doc says what's *unsafe/unverified*; this doc says what's *unbuilt* and how the two
+products join.
+
+**Written:** 2026-07-17, from a code-read of both repos (`C:\Users\emekamichael\LMS`
+and the `psw` ElderCare repo). Paths are relative to each repo's root.
+
+---
+
+## 0. Verified current state (don't re-derive)
+
+**Two separate products, two stacks, adjacent care settings:**
+
+| | ElderCare Companion (`psw`) | Maple Care LMS (this repo) |
+|---|---|---|
+| Domain | **Home-care agency** management (PSWs visiting clients) | **Long-term-care** compliance **training** (facility staff) |
+| Stack | FastAPI + SQLAlchemy + Postgres; React Native (Expo) app | NestJS 10 + Prisma + Postgres; Next.js 15 web |
+| Auth | Homegrown, Canadian-resident JWT + MFA (audited, RLS-hardened) | **Clerk (US IdP)** — must be removed (LMS-M6) |
+| Tenancy | per-org + Postgres RLS backstop (live in prod) | per-org app-layer injection (proven by LMS-C1) |
+| Status | Live, pre-first-customer, actively developed | **Paused**, backend safety done, UX/content/integration unbuilt |
+
+**LMS API (`apps/api`) — SOLID, do not rebuild** (per the audit, all CRITICAL+HIGH closed):
+- Feature modules exist and are tenant-scoped: `assignments`, `staff`, `roster`,
+  `certificates`, `reports`, `billing` (Stripe), `video` (Mux), `onboarding`,
+  `required-training`, `retention`, `me`, `modules`.
+- Tenant isolation is **request-scoped orgId injection**, fail-closed, proven across
+  two seeded orgs (LMS-C1). Webhooks (Stripe/Mux/Clerk) signature-verified + tested
+  (LMS-C2). PHI access logging default-on. CI stands up Postgres+Redis with a
+  schema-drift gate + 60% service-coverage floor.
+- Data model ([apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma)) is
+  complete and well-shaped: `Organization → Site → Staff`, `Module → Lesson →
+  Quiz → Question`, `RequiredTraining` (role×site×jurisdiction×cadence),
+  `Assignment → Attempt → Certificate`, `Subscription`, `RosterImport`,
+  append-only `AuditEvent` + `RecordAccessLog`.
+
+**LMS web (`apps/web`) — SCAFFOLDED, needs finish + verify:**
+- Pages: landing, `dashboard`, `admin/{staff,roster,required-trainings,reports,billing}`,
+  `onboarding` + `accept-invite`, `training/[slug]` + `training/[slug]/quiz`,
+  Clerk `sign-in`/`sign-up`.
+- Components: `quiz-runner`, `roster-uploader`, `certificate-download`,
+  `invite-staff-form`, `create-required-training-form`, `billing-actions`,
+  `report-filters`, `onboarding-form`.
+- **Gap:** the video **lesson player** is not evident (no video/player component found);
+  the learning flow (watch lessons → unlock quiz → pass → cert) is only partly wired.
+  Web was only reviewed structure-level in the audit — **treat every page as
+  build-but-unverified until driven end-to-end.**
+
+**Content — NOT authored.** The 8 mandatory modules (IPAC, Fire Safety, WHMIS 2015,
+Resident Rights, Abuse & Reporting, PHIPAA Privacy, Falls, Responsive Behaviours) have
+a schema home but no real lessons/videos/quizzes. This is product+SME work, not just code.
+
+**The one standing blocker for any PHI pilot:** **LMS-M6 — Clerk (US IdP) breaks the
+ca-central-1 residency claim.** Decision on record = remove Clerk, federate identity
+from ElderCare. Deferred once for ElderCare MVP focus. The audit already carries a
+**code-verified Clerk-decommission plan** — reuse it verbatim; do not re-derive.
+
+---
+
+## 1. Integration architecture — "one platform, two services"
+
+**Recommendation: do NOT merge the codebases.** Different stacks, different care
+settings, different regulatory frames. Integrate at the **identity** and **data**
+seams so they present as one platform:
+
+- **ElderCare = system of record for people, orgs, and identity.** It already holds
+  agencies, staff, roles, and — critically — **staff certifications with expiry
+  alerting** (`StaffCertification` + `CredentialType` catalog + the daily
+  credential-expiry scan).
+- **Maple Care LMS = system of record for training delivery + compliance evidence.**
+  Video lessons, quizzes, per-jurisdiction required-training policy, inspector exports,
+  per-seat billing.
+
+The value proposition of integrating (why this is worth doing): **"Your caregivers'
+mandatory training is assigned, delivered, and tracked — and shows up as
+tracked, expiring credentials inside the ElderCare tool you already run your agency
+in."** ElderCare gets a training engine without building one; the LMS gets
+distribution + a Canadian identity backbone.
+
+### The three integration seams
+
+**Seam 1 — Identity (auth): ElderCare becomes an OIDC provider; LMS federates from it.**
+This is LMS-M6 + a new ElderCare capability. ElderCare has **no OIDC-provider surface
+today** (its `SSOConfiguration` is the *consumer* side — enterprise orgs logging *into*
+ElderCare via their own IdP; the opposite direction). So this seam has a hard
+prerequisite in the `psw` repo: make ElderCare mint verifiable OIDC/JWKS tokens.
+- **Security-sensitive:** this modifies the just-audited, RLS-hardened ElderCare auth
+  core → own review required.
+- **De-risking:** build the LMS side against a provider-agnostic `IdentityProvider`
+  interface (the audit's M6 plan defines it), so the cutover is a verifier swap.
+
+**Seam 2 — Org & staff provisioning: JIT from OIDC claims.**
+When an ElderCare caregiver logs into the LMS, provision their LMS `Organization`
+(from ElderCare agency), `Site` (from ElderCare `Facility`), `Staff` + `Role` from
+the OIDC claims. The LMS `upsertFromClerk` already upserts on lookup-miss — the same
+shape works against OIDC `userinfo`. **Role mapping is the real work** (Seam 2a).
+
+**Seam 2a — Role taxonomy mapping.** ElderCare uses generic care roles
+(`psw`, `nurse`, `care_coordinator`, …); the LMS uses jurisdiction-namespaced
+regulatory roles (`NB_RA`, `NB_PCW`, `NB_RN`, …). A mapping table (ElderCare role ×
+jurisdiction → LMS `Role.code`) drives which `RequiredTraining` applies. **Scoping
+decision:** the LMS was built for LTC facilities; serving ElderCare's *home-care*
+agencies means adding a home-care role set + home-care `RequiredTraining` catalog
+(the engine is already per-jurisdiction and role-namespaced, so this is data, not
+rearchitecture). Decide early whether the first integrated pilot is LTC or home-care.
+
+**Seam 3 — Certificate flow-back (the killer feature).**
+LMS `Certificate` (id, assignment, `sha256`, issuedAt) → ElderCare `StaffCertification`.
+The ElderCare model maps almost 1:1:
+
+| LMS `Certificate` / `Assignment` | ElderCare `StaffCertification` |
+|---|---|
+| module title | `certification_name` / `certification_type` |
+| "Maple Care LMS" | `issuing_authority` |
+| certificate id | `certificate_number` |
+| issuedAt | `issued_date` |
+| issuedAt + `RequiredTraining.cadence` | `expiry_date` (drives ElderCare expiry alerts!) |
+| `sha256` | `attachment_sha256` (tamper-evidence already modeled) |
+| signed cert PDF (S3) | `attachment_url` |
+| — | `is_verified = true` (LMS-issued = authoritative) |
+
+Mechanism: on `certificate.issued`, the LMS calls an ElderCare inbound webhook
+(HMAC-signed, ca-central-1 → ca-central-1) that upserts the `StaffCertification`.
+Idempotent on certificate id. This closes the loop: LMS delivers training →
+ElderCare shows it as a tracked, expiring credential and fires the existing
+renewal reminders.
+
+### Data-model mapping (identity + tenancy)
+
+| Concept | ElderCare | LMS | Join key |
+|---|---|---|---|
+| Tenant | `Organization` (agency) | `Organization` (operator) | OIDC `org` claim ↔ external org id |
+| Person | `User` (email) | `User` (email) → `Staff` | **email** (both `@unique`) + OIDC `sub` → `externalAuthId` |
+| Location | `Facility` | `Site` | facility id in OIDC claim |
+| Role | `role` string | `Role.code` | mapping table (Seam 2a) |
+| Credential | `StaffCertification` ← | `Certificate` | certificate id (flow-back) |
+
+**Residency:** both services deploy to `ca-central-1`. Once Clerk is gone, identity
+data (names/emails/auth events) stays in Canada end-to-end — which is the entire point
+of Seam 1 and the compliance story for NB/NS/PE/NL.
+
+### 1.5 Care-setting fit — does Maple Care suit home-care agencies?
+
+ElderCare serves **home-care agencies** (PSWs visiting clients in their homes); Maple
+Care was built for **LTC facilities** (residents in a licensed building). These are
+adjacent but distinct settings, so the honest answer is: **yes — with a home-care
+content track, not as-is and not a rebuild.** The platform is setting-agnostic; the
+*content and compliance catalog* are LTC-authored and need a home-care variant.
+
+**Why the platform itself fits either setting** (already true in the schema, do not
+rebuild): `Role` is a per-jurisdiction lookup **table** (not an enum); `RequiredTraining`
+is configurable policy ("role Y completes module Z on cadence C"), not a fixed LTC list;
+`Module.jurisdiction` + `Module.orgId` are both nullable (global vs. per-org); operators
+can upload their own content. Certificate issuance, bilingual EN/FR, per-seat billing,
+and inspector exports are all setting-neutral mechanics.
+
+**What is genuinely LTC-specific — the real work — is content + config, not
+architecture.**
+
+Module-by-module transfer of the 8 mandatory modules to home care:
+
+| Module | Home-care fit |
+|---|---|
+| WHMIS 2015 | Transfers ~unchanged |
+| Privacy (PHIPAA / PIPEDA) | Transfers ~unchanged |
+| Abuse & Reporting / adult protection | Transfers — statutory duty applies both settings |
+| IPAC (infection control) | Mostly — reframe: no facility IPAC team, in-home context |
+| Falls Prevention | Mostly — reframe to the client's home environment |
+| Responsive Behaviours / Dementia | Transfers — arguably *more* relevant to home care |
+| Resident Rights | Reframe — "resident/facility" → "client/in the home"; different basis |
+| Fire Safety | Weak fit — facility evacuation/drills don't map to a caregiver in a home |
+
+Plus **net-new home-care modules LTC doesn't cover** (these are what a home-care
+Director of Care will actually judge the product on): lone/solo-worker safety, safe
+travel/driving between clients, working in a client's private home (boundaries, family,
+pets), and emergency response when alone with a client (no code team).
+
+Three model/config mismatches — all **data-level, not architectural**:
+1. **`Site` assumes a licensed facility** (`regulatorLicenseNumber`). Home care has
+   distributed private residences — repurpose `Site` as a **branch / service-area**, or
+   make it optional.
+2. **Inspector-export templates** are formatted for NB Dept. of Social Development
+   *nursing-home* inspections — home-care agency audits are a different format.
+3. **Role taxonomy** — add the home-support / PSW roles ElderCare uses (Seam 2a).
+
+**Strategic upside — the fork is cheap right now.** Because the modules are *not yet
+authored* (Phase B), choosing home-care-first is not a detour — it is just picking
+*which catalog to write first*. Taken now it costs almost nothing; taken later it means
+not breaking existing LTC content + customers. If ElderCare's agencies are the first
+real distribution, **author the home-care track first.**
+
+**The one non-code piece of homework (do before authoring/marketing as "compliance"):**
+the home-care mandatory-training list rests on a **different regulatory basis than the
+Nursing Homes Act** — home support / home care in NB (and NS/PE/NL) is regulated
+separately. The 8-module list is LTC-derived; what is *actually legally mandated* for a
+home-support worker must be confirmed against the real regulations before it is authored
+and sold as compliance. This is regulatory research, not engineering.
+
+**Net recommendation:** run Maple Care as a **two-track compliance platform under one
+engine** — LTC and home-care catalogs side by side. For the ElderCare integration,
+author the home-care track first, repurpose `Site` as branch/service-area, reframe the
+transferable modules, and add the net-new home-care ones.
+
+---
+
+## 2. The completion plan (phased)
+
+Phases A–B are **LMS-internal** and can proceed **now**, with no dependency on the
+ElderCare OIDC work. Phases C–D are the integration core and gate on the ElderCare
+prerequisite. Phase E is go-live. This ordering lets real progress happen before the
+risky cross-repo auth change.
+
+### Phase A — Finish & verify the learning experience (LMS-internal)
+**Goal:** a caregiver can log in, watch a module's lessons, pass the quiz, and get a
+certificate — driven end-to-end, not just typechecking.
+- Build/verify the **video lesson player** (Mux signed playback) in
+  `app/training/[slug]` — gate the quiz on lesson completion.
+- Verify `quiz-runner` → `POST attempt` scoring (single/multi/true-false, pass at
+  `passMark`), attempt limits, and the pass → `Assignment.completed` →
+  `certificate.processor` chain (already unit-covered; verify through the UI).
+- Verify `certificate-download` (owner/same-org-admin gate).
+- Verify the admin surfaces: `staff`, `roster` (CSV upload → invitations →
+  materialize), `required-trainings` (create → materialize assignments), `reports`
+  (per-site/topic/date-range CSV+PDF inspector export), `billing`.
+- **Run the app** (`pnpm dev`) against the seed org and click every flow. The audit
+  proved the API; this phase proves the UX.
+- **Deliverable:** a green end-to-end manual pass + a short `docs/UX_VERIFIED.md`
+  checklist. Fix whatever's build-but-broken (expect some, per the audit's H3 class).
+
+### Phase B — Author the training catalog (product + SME)
+**Goal:** real compliance content, bilingual EN/FR (statutory in NB).
+- For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
+  bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
+- This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
+  for the actual training material. **Not a code blocker** for A/C/D but blocks a real
+  pilot.
+
+**B0 — Pick the catalog: home-care track first (see §1.5).** For the ElderCare
+integration the first catalog to author is the **home-care track**, not the LTC one:
+- **Regulatory homework FIRST (non-code, gating):** confirm the *actually mandated*
+  home-support / home-care training list for NB (then NS/PE/NL) against the real
+  regulations — it rests on a different basis than the Nursing Homes Act 8-module list.
+  Do not author or market as "compliance" until this is confirmed.
+- **Reframe the transferable modules** for the in-home context: WHMIS / Privacy /
+  Abuse-&-Reporting ~unchanged; IPAC + Falls reframed (no facility team, client's home);
+  Responsive Behaviours transfers; Resident Rights → **client rights in the home**;
+  drop/replace facility Fire Safety.
+- **Author the net-new home-care modules:** lone/solo-worker safety, safe travel between
+  clients, working in a client's private home (boundaries/family/pets), emergency
+  response when alone with a client.
+- **Config:** add the home-support/PSW `Role` rows (Seam 2a); build the home-care
+  `RequiredTraining` policy set; repurpose `Site` as **branch/service-area** (or make it
+  optional) since home care has no licensed facility; add a home-care inspector-export
+  template variant.
+- The LTC catalog remains a parallel track under the same engine — author it when an LTC
+  operator is the customer.
+
+### Phase C — Remove Clerk, federate from ElderCare (integration core)
+**Hard gate:** ElderCare can issue verifiable OIDC tokens (`psw` prerequisite — see §3).
+**Follow the audit's LMS-M6 decommission plan verbatim.** Summary sequence:
+1. Introduce an `IdentityProvider` interface behind the current Clerk callers (guard +
+   current-user) with Clerk still the impl — pure refactor, CI green. *(LMS-internal;
+   can land before the gate.)*
+2. Rename `User.clerkUserId → externalAuthId` (additive migration; update guard,
+   current-user, webhook, seeds, harness stub). *(LMS-internal.)*
+3. Replace Clerk invitations with an **LMS-native `Invitation` table** (token, email,
+   orgId, siteId, roleCode, expiry) — self-contained, drops the magic-link +
+   webhook-metadata mechanism. *(LMS-internal; recommended over ElderCare-owns-invites.)*
+4. **Swap the impl** to the ElderCare OIDC verifier (verify against ElderCare JWKS);
+   delete `clerk.service.ts`, `clerk-webhook.controller.ts`, Clerk deps + env. *(Gated.)*
+5. **Web:** replace `ClerkProvider`/`clerkMiddleware`/sign-in-up with the OIDC redirect
+   to ElderCare; replace `auth().getToken()` in `lib/api.ts`; update the 7 hook-using
+   components. *(Gated.)*
+6. **Tests:** rename the stubbed provider in `harness.ts`; C1/C2 isolation must stay
+   green (org-context resolution unchanged — only its source moved).
+7. **Security re-review** (touches the audited auth core) + verify: no Clerk in the
+   auth path, identity data in Canada.
+
+### Phase D — Certificate flow-back to ElderCare (Seam 3)
+**Gate:** an authenticated service channel between the two apps (falls out of Phase C).
+- **ElderCare side (`psw`):** inbound HMAC-signed webhook `POST /integrations/lms/certificate`
+  → upsert `StaffCertification` (idempotent on certificate id; map per the Seam-3 table;
+  `expiry_date` from cadence → feeds the existing credential-expiry scan). New router;
+  gate behind the permission model; audit it.
+- **LMS side:** on `certificate.issued`, enqueue a BullMQ job that calls the ElderCare
+  webhook; retry with backoff; record delivery in `AuditEvent`.
+- **Role/cred mapping:** LMS module ↔ ElderCare `CredentialType.code` (extend the
+  ElderCare catalog with the 8 training creds).
+- **Verify:** complete a training in the LMS → the caregiver's ElderCare credential
+  list shows it with the right expiry → the renewal reminder fires on schedule.
+
+### Phase E — Go-live hardening
+- **Secrets rotation** (LMS-M1 folds in once Clerk is gone — no Clerk keys left).
+- Stripe live keys + Stripe Tax (GST/HST); Mux prod; Resend prod; S3 ca-central-1
+  bucket + lifecycle/retention.
+- Deploy pipeline for `apps/api` + `apps/web` to ca-central-1; DB backups + restore
+  drill (mirror the ElderCare posture).
+- Bilingual QA (fr-CA), AODA/WCAG 2.1 AA pass (ON expansion).
+- Load-check the reports/export path (inspector PDFs).
+
+---
+
+## 3. Running this in a fresh session
+
+**First, read (in order):** this file → [LMS_PRE_LAUNCH_AUDIT.md](LMS_PRE_LAUNCH_AUDIT.md)
+(esp. the "What is already solid" list and the LMS-M6 decommission plan) → the
+`psw` repo memory (`auth-residency-constraint`, `lms-as-built-reconciliation`).
+
+**The one dependency that reorders everything:** Seam 1 (ElderCare OIDC provider) is a
+multi-week, security-reviewed change to ElderCare's auth core, and the owner has already
+deferred it once for MVP focus. So:
+- **Start with Phases A + B and Phase C steps 1–3** — all LMS-internal, real progress,
+  zero dependency on ElderCare. This also shrinks the eventual cutover to a verifier swap.
+- **Do NOT begin Phase C steps 4–5 or Phase D** until ElderCare issues verifiable OIDC
+  tokens. Treat "ElderCare OIDC provider exists" as the explicit resume gate.
+
+**Suggested first-session scope (no cross-repo risk):** Phase A end-to-end
+verification + fix the build-but-broken UX + Phase C step 1 (the `IdentityProvider`
+refactor) + step 2 (`externalAuthId` rename). That leaves the LMS provider-swap-ready
+and the learning experience proven, without touching ElderCare's auth.
+
+**Key risks / decisions to surface to the owner up front:**
+1. **LTC vs home-care first — DECIDED: home-care first** (see §1.5 + Phase B0). Maple
+   Care fits home-care agencies *with a home-care content track* (setting-agnostic
+   engine; LTC-specific content/catalog). Since modules aren't authored yet, this fork
+   is cheap now. Gating non-code item: confirm the real home-care mandatory-training
+   list (different regulatory basis than the Nursing Homes Act) before authoring.
+2. **The OIDC prerequisite is the real cost.** Everything downstream of identity gates
+   on a security-sensitive ElderCare change. Budget it explicitly or keep the LMS on
+   Clerk with a signed DPA as an *interim* (the audit's stated minimum) — but that
+   forfeits the residency claim, so it's pilot-only.
+3. **Don't regress the audited safety infra.** The tenant-isolation chain (LMS-H1/C1)
+   and PHI logging are load-bearing; the Clerk swap must keep the C1/C2 suites green.
+4. **Content is a non-code critical path.** Phase B (real bilingual modules) can't be
+   coded away and blocks a real pilot regardless of engineering progress.
