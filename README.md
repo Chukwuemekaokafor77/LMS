@@ -48,7 +48,9 @@ pnpm install
 # 2. Env
 cp .env.example .env
 
-# 3. Boot Postgres + Redis
+# 3. Boot Postgres + Redis (+ MinIO as a local S3, so certificate PDFs and
+#    roster uploads work without an AWS account — see the AWS section of
+#    .env.example for the env values to uncomment)
 pnpm db:up
 
 # 4. Migrate + seed (NB demo org "Foyer Acadien de Moncton" + 8 modules)
