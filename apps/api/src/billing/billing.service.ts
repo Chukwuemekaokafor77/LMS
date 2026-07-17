@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Injectable,
   Logger,
@@ -35,6 +36,21 @@ export class BillingService {
   ) {}
 
   /**
+   * Stripe SDK errors carry their own statusCode and message (which can hint
+   * at key material, e.g. "Invalid API Key provided: sk_test_*..."), and Nest
+   * would relay both to the client. Log the real error server-side and return
+   * an opaque 502 instead.
+   */
+  private async stripeCall<T>(op: string, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      this.log.error(`Stripe ${op} failed: ${(err as Error).message}`);
+      throw new BadGatewayException("Payment provider error");
+    }
+  }
+
+  /**
    * Create a Stripe Checkout session for an org to start their subscription.
    * Org admins call this; the resulting subscription is per-seat.
    */
@@ -53,10 +69,12 @@ export class BillingService {
 
     let stripeCustomerId = org.stripeCustomerId;
     if (!stripeCustomerId) {
-      const cust = await this.stripe.client.customers.create({
-        name: org.name,
-        metadata: { orgId: org.id, jurisdiction: org.jurisdiction },
-      });
+      const cust = await this.stripeCall("customers.create", () =>
+        this.stripe.client.customers.create({
+          name: org.name,
+          metadata: { orgId: org.id, jurisdiction: org.jurisdiction },
+        }),
+      );
       stripeCustomerId = cust.id;
       await this.prisma.organization.update({
         where: { id: org.id },
@@ -65,15 +83,17 @@ export class BillingService {
     }
 
     const webBase = this.config.getOrThrow<string>("WEB_BASE_URL");
-    const session = await this.stripe.client.checkout.sessions.create({
-      mode: "subscription",
-      customer: stripeCustomerId,
-      line_items: [{ price: priceId, quantity: seats }],
-      automatic_tax: { enabled: true },
-      success_url: `${webBase}/admin/billing?status=success`,
-      cancel_url: `${webBase}/admin/billing?status=cancelled`,
-      metadata: { orgId: org.id, actorUserId, seats: String(seats) },
-    });
+    const session = await this.stripeCall("checkout.sessions.create", () =>
+      this.stripe.client.checkout.sessions.create({
+        mode: "subscription",
+        customer: stripeCustomerId,
+        line_items: [{ price: priceId, quantity: seats }],
+        automatic_tax: { enabled: true },
+        success_url: `${webBase}/admin/billing?status=success`,
+        cancel_url: `${webBase}/admin/billing?status=cancelled`,
+        metadata: { orgId: org.id, actorUserId, seats: String(seats) },
+      }),
+    );
 
     return { url: session.url };
   }
