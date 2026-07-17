@@ -38,6 +38,7 @@ async function wipe(db: PrismaClient) {
   // interceptor during the suite, so clear them too for a clean slate.
   await db.recordAccessLog.deleteMany({});
   await db.auditEvent.deleteMany({});
+  await db.lessonProgress.deleteMany({});
   await db.certificate.deleteMany({});
   await db.attempt.deleteMany({});
   await db.assignment.deleteMany({});
