@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-maple}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maple}
-      POSTGRES_DB: ${POSTGRES_DB:-maple_lms}
+      POSTGRES_DB: ${POSTGRES_DB:-maple_care}
     ports:
       - "5432:5432"
     volumes:
@@ -29,6 +29,42 @@ services:
       timeout: 5s
       retries: 10
 
+  # Local S3 stand-in so the certificate + roster-import flows work without an
+  # AWS account. The AWS SDK reads AWS_ENDPOINT_URL_S3 natively (no code
+  # changes) but addresses buckets virtual-host style (bucket.host), so the
+  # endpoint must be a wildcard-resolvable name: *.localhost.localstack.cloud
+  # is public wildcard DNS for 127.0.0.1. See .env.example (AWS section).
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_DOMAIN: s3.localhost.localstack.cloud
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: creates the dev bucket, then exits.
+  minio-init:
+    image: minio/minio:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - mc alias set local http://minio:9000 minioadmin minioadmin && mc mb --ignore-existing local/maple-care-dev
+    restart: "no"
+
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
