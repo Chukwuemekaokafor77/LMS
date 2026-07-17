@@ -44,10 +44,12 @@ and the `psw` ElderCare repo). Paths are relative to each repo's root.
 - Components: `quiz-runner`, `roster-uploader`, `certificate-download`,
   `invite-staff-form`, `create-required-training-form`, `billing-actions`,
   `report-filters`, `onboarding-form`.
-- **Gap:** the video **lesson player** is not evident (no video/player component found);
+- ~~**Gap:** the video **lesson player** is not evident (no video/player component found);
   the learning flow (watch lessons → unlock quiz → pass → cert) is only partly wired.
   Web was only reviewed structure-level in the audit — **treat every page as
-  build-but-unverified until driven end-to-end.**
+  build-but-unverified until driven end-to-end.**~~ **Closed 2026-07-17 (Phase A
+  pass):** lesson player + `LessonProgress` + server-side quiz gate built (PR #12)
+  and every page driven end-to-end — see [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md).
 
 **Content — NOT authored.** The 8 mandatory modules (IPAC, Fire Safety, WHMIS 2015,
 Resident Rights, Abuse & Reporting, PHIPAA Privacy, Falls, Responsive Behaviours) have
@@ -214,6 +216,12 @@ prerequisite. Phase E is go-live. This ordering lets real progress happen before
 risky cross-repo auth change.
 
 ### Phase A — Finish & verify the learning experience (LMS-internal)
+**Status: ✅ done 2026-07-17.** Every flow below driven end-to-end with real Clerk
+auth; the missing lesson player + quiz gate built (PR #12); build-but-broken finds
+fixed (answer-key leak PR #13, Stripe error passthrough PR #14; local-S3 DX in
+`chore/local-dev-s3-env-hygiene`). Evidence + the one open product question
+(attempt limits) in [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md).
+
 **Goal:** a caregiver can log in, watch a module's lessons, pass the quiz, and get a
 certificate — driven end-to-end, not just typechecking.
 - Build/verify the **video lesson player** (Mux signed playback) in

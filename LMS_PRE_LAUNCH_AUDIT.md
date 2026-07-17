@@ -207,6 +207,19 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-17_ — **Phase A UX verification pass (resume session).** Every learner +
+  admin surface driven end-to-end with real Clerk dev-instance auth (no stubs) —
+  see [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md). Safety-relevant changes: the new
+  `LessonProgress` model (lesson player + server-side quiz gate, PR #12) is
+  registered as a **sixth PHI model in the LMS-H1 guardrail** and proven isolated
+  on the C1 two-org harness ([test/lesson-gate.e2e-spec.ts](apps/api/test/lesson-gate.e2e-spec.ts));
+  a **learner-facing answer-key leak** (`GET /assignments/:id` shipped `correctIdx`
+  + explanations into the quiz page HTML) was found and fixed (PR #13,
+  [test/answer-key.e2e-spec.ts](apps/api/test/answer-key.e2e-spec.ts)); Stripe SDK
+  errors are now mapped to an opaque 502 instead of relaying provider
+  status/message (PR #14). Full suite green incl. the 60% coverage gate (owner-run).
+  C1/C2 suites unchanged in substance; their seeds now also wipe `lesson_progress`.
+  **LMS-M1 remains the only open finding.**
 - _2026-06-08_ — **LMS-M1 intentionally deferred** (owner's call): roll the Clerk key rotation into one coordinated all-providers secrets-rotation pass before a pilot, rather than rotating Clerk alone now. No git leak today (`.env` untracked). This is the only finding left open; everything else (C1/C2, H1–H3, L1/L2, M2–M5) is done + merged.
 - _2026-06-08_ — **LMS-M5 done (PR #9, CI green).** Required-training materialization is now idempotent — dedupes on an existing current assignment for `(staffId, requiredTrainingId)` before creating, so retried jobs / re-saved RequiredTrainings no longer duplicate assignments (renewal after a lapse still works). **Only LMS-M1 (rotate live Clerk keys — an ops task) remains.**
 - _2026-06-08_ — **LMS-M3 done (PR #8, CI green).** All nine `@Body()`/`@Query()` handlers confirmed backed by class-validator DTOs; added a reject-path e2e proving the global ValidationPipe 400s on unknown/wrong-typed/missing/bad-enum input (body + query). Remaining: LMS-M1, LMS-M5.
