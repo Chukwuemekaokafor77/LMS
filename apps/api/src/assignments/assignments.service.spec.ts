@@ -23,6 +23,14 @@ describe("AssignmentsService Scoring Logic", () => {
       staff: {
         findUnique: vi.fn(),
       },
+      // No READY lessons → the lesson-completion quiz gate is vacuous here.
+      // The gated paths are covered for real in test/lesson-gate.e2e-spec.ts.
+      lesson: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      lessonProgress: {
+        count: vi.fn().mockResolvedValue(0),
+      },
       $transaction: vi.fn((cb) => cb(prisma)),
     };
     audit = { record: vi.fn() };

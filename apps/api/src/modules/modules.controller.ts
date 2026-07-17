@@ -35,6 +35,7 @@ export class ModulesController {
       slug,
       staff.orgId,
       staff.jurisdiction as Jurisdiction,
+      staff.staffId,
     );
   }
 }

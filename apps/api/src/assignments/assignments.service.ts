@@ -44,6 +44,29 @@ export class AssignmentsService {
     return a;
   }
 
+  /**
+   * Quiz gate: every lesson of the module with a READY video must be completed
+   * by this staff before an attempt may start or be submitted. Lessons whose
+   * video is still pending/processing can't be watched, so they don't block.
+   * Enforced server-side on both start and submit — the UI lock alone would
+   * be trivial to bypass for a product whose output is a compliance record.
+   */
+  private async assertLessonsComplete(moduleId: string, staffId: string) {
+    const required = await this.prisma.lesson.findMany({
+      where: { moduleId, videoStatus: "READY" },
+      select: { id: true },
+    });
+    if (required.length === 0) return;
+    const done = await this.prisma.lessonProgress.count({
+      where: { staffId, lessonId: { in: required.map((l) => l.id) } },
+    });
+    if (done < required.length) {
+      throw new BadRequestException(
+        "All lessons must be completed before taking the quiz",
+      );
+    }
+  }
+
   async startAttempt(assignmentId: string, staffId: string) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -54,6 +77,7 @@ export class AssignmentsService {
     if (assignment.status === "COMPLETED" || assignment.status === "REVOKED") {
       throw new BadRequestException(`Assignment ${assignment.status.toLowerCase()}`);
     }
+    await this.assertLessonsComplete(assignment.moduleId, staffId);
     const attempt = await this.prisma.attempt.create({
       data: { 
         assignmentId,
@@ -97,6 +121,11 @@ export class AssignmentsService {
     }
     const quiz = attempt.assignment.module.quiz;
     if (!quiz) throw new BadRequestException("Module has no quiz");
+
+    await this.assertLessonsComplete(
+      attempt.assignment.moduleId,
+      input.staffId,
+    );
 
     // Score: percent of questions where selected indices match correctIdx exactly.
     const byId = new Map(quiz.questions.map((q) => [q.id, q]));

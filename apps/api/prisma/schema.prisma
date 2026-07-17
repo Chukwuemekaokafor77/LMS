@@ -102,6 +102,7 @@ model Organization {
   assignments       Assignment[]
   attempts          Attempt[]
   certificates      Certificate[]
+  lessonProgress    LessonProgress[]
 
   @@index([jurisdiction])
 }
@@ -155,6 +156,7 @@ model Staff {
   updatedAt      DateTime      @updatedAt
 
   assignments    Assignment[]
+  lessonProgress LessonProgress[]
 
   @@index([orgId, siteId])
   @@index([roleCode])
@@ -205,8 +207,29 @@ model Lesson {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
+  progress      LessonProgress[]
+
   @@unique([moduleId, position])
   @@index([moduleId])
+}
+
+// Per-staff lesson completion — what the learner has actually watched.
+// Written by the lesson player (video "ended" event); read to gate the quiz.
+// PHI-adjacent (per-person training activity): carries orgId and is covered
+// by the tenant-isolation guardrail like the other per-staff tables.
+model LessonProgress {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id])
+  staffId     String
+  staff       Staff        @relation(fields: [staffId], references: [id])
+  lessonId    String
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime     @default(now())
+
+  @@unique([staffId, lessonId])
+  @@index([orgId])
+  @@index([lessonId])
 }
 
 model Quiz {
