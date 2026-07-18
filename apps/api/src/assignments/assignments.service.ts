@@ -16,6 +16,13 @@ type SubmissionResponse = {
   selectedIdx: number[];
 };
 
+/**
+ * Owner decision (2026-07-17): quiz attempts are capped at 5 per assignment.
+ * An attempt is consumed when it is started; already-started attempts may
+ * still be submitted. A renewal (new assignment from cadence) gets a fresh 5.
+ */
+export const MAX_ATTEMPTS_PER_ASSIGNMENT = 5;
+
 @Injectable()
 export class AssignmentsService {
   constructor(
@@ -59,7 +66,7 @@ export class AssignmentsService {
     });
     if (!a) throw new NotFoundException();
     if (a.staffId !== staffId) throw new ForbiddenException();
-    return a;
+    return { ...a, maxAttempts: MAX_ATTEMPTS_PER_ASSIGNMENT };
   }
 
   /**
@@ -94,6 +101,14 @@ export class AssignmentsService {
     if (assignment.staffId !== staffId) throw new ForbiddenException();
     if (assignment.status === "COMPLETED" || assignment.status === "REVOKED") {
       throw new BadRequestException(`Assignment ${assignment.status.toLowerCase()}`);
+    }
+    const used = await this.prisma.attempt.count({
+      where: { assignmentId },
+    });
+    if (used >= MAX_ATTEMPTS_PER_ASSIGNMENT) {
+      throw new BadRequestException(
+        `Attempt limit reached (${MAX_ATTEMPTS_PER_ASSIGNMENT} of ${MAX_ATTEMPTS_PER_ASSIGNMENT} used)`,
+      );
     }
     await this.assertLessonsComplete(assignment.moduleId, staffId);
     const attempt = await this.prisma.attempt.create({
