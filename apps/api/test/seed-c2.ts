@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { drainQueues } from "./drain-queues";
 
 /**
  * Focused seed for the LMS-C2 flow tests (cert idempotency, attempt scoring,
@@ -27,6 +28,9 @@ export type C2Base = {
 const ROLE = "NB_PCW";
 
 async function wipe(db: PrismaClient) {
+  // A cert job from a previous test's passing submit can insert a Certificate
+  // mid-wipe (FK violation on assignment.deleteMany) — quiesce workers first.
+  await drainQueues();
   await db.recordAccessLog.deleteMany({});
   await db.auditEvent.deleteMany({});
   await db.lessonProgress.deleteMany({});
