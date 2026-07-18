@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { drainQueues } from "./drain-queues";
 
 /**
  * Seeds two complete, independent org graphs (A and B) for the cross-tenant
@@ -34,6 +35,9 @@ const ADMIN_ROLE = "NB_ADMIN";
 const WORKER_ROLE = "NB_PCW";
 
 async function wipe(db: PrismaClient) {
+  // Quiesce background workers first — a certificate job from a previous
+  // suite's passing submit can insert rows mid-wipe (FK violation).
+  await drainQueues();
   // FK-safe order. RecordAccessLog/AuditEvent are written by the PHI
   // interceptor during the suite, so clear them too for a clean slate.
   await db.recordAccessLog.deleteMany({});
