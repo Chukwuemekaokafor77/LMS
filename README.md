@@ -1,21 +1,30 @@
 # Maple Care
 
-Compliance training for Atlantic-Canada long-term-care operators.
+Compliance training for Atlantic-Canada **home-care agencies**, delivered as a
+feature of ElderCare Companion (separate `psw` repo).
 Launch jurisdiction: **New Brunswick** (statutory bilingual delivery + PHIPAA).
+
+> **Direction (2026-07-18):** home-care only — the original LTC track is
+> dropped. Access is an **ElderCare entitlement**: agencies get training as
+> part of their ElderCare relationship and are never billed twice (the LMS has
+> no billing of its own; Stripe was removed). The training engine itself stays
+> setting-agnostic. See `LMS_COMPLETION_PLAN.md` for the integration plan.
 
 ## What it is
 
-A multi-tenant LMS sold per-seat to LTC operators. The product solves two
-recurring pains for a Director of Care:
+A multi-tenant training engine for the agencies ElderCare serves. It solves two
+recurring pains for an agency's Director of Care:
 
-1. **Onboarding new staff fast.** Roster CSV → assignments → completions.
-2. **Surviving an inspection.** Per-site, per-topic, per-date-range PDF/CSV
-   exports formatted for NB Department of Social Development inspections.
+1. **Onboarding new caregivers fast.** Roster CSV → assignments → completions.
+2. **Surviving an audit.** Per-branch, per-topic, per-date-range PDF/CSV
+   exports, plus completions flowing back into ElderCare as tracked, expiring
+   staff credentials.
 
-Eight mandatory modules are authored by Maple Care (IPAC, Fire Safety,
-WHMIS 2015, Resident Rights, Abuse & Reporting, PHIPAA Privacy, Falls
-Prevention, Responsive Behaviours / Dementia). Operators may also upload
-their own existing PowerPoints, PDFs, and videos.
+The home-care module catalog (reframed IPAC/falls/privacy/abuse-reporting plus
+net-new lone-worker, travel-between-clients, and in-home-boundaries modules) is
+authored under Phase B of the completion plan — the actually-mandated NB
+home-support training list must be confirmed against the regulations first.
+Agencies may also upload their own existing PowerPoints, PDFs, and videos.
 
 ## Stack
 
@@ -25,8 +34,8 @@ their own existing PowerPoints, PDFs, and videos.
 | API      | NestJS 10                                       | DI + module structure scales past one founder        |
 | ORM / DB | Prisma + PostgreSQL 16                          | Multi-tenant schema, PR-reviewable migrations        |
 | Cache    | Redis 7                                         | BullMQ jobs, rate limiting                           |
-| Auth     | Clerk                                           | Org-invited staff via magic link; org admin via SSO  |
-| Payments | Stripe Subscriptions + Stripe Tax               | Per-seat billing, GST/HST handled                    |
+| Auth     | Clerk (interim — ElderCare OIDC after LMS-M6)   | LMS-native invitations; federation swap is gated     |
+| Payments | — none                                          | ElderCare-entitled; ElderCare bills, nobody pays twice |
 | Video    | Mux (signed playback)                           | Adaptive streaming, no infra                         |
 | Jobs     | BullMQ on Redis                                 | Webhook retries, emails, transcoding callbacks      |
 | Email    | Resend (mocked in dev)                          | Bilingual EN/FR transactional email                  |
@@ -36,7 +45,7 @@ their own existing PowerPoints, PDFs, and videos.
 
 - **Multi-jurisdiction from day 1.** `Organization.jurisdiction` (NB / NS / PE / NL / ON) drives the required-training catalog and inspector-export template. Role taxonomy is namespaced per jurisdiction (`NB_RA`, `NS_CCA`, ...) — not a hardcoded enum.
 - **Bilingual EN/FR is statutory in NB.** `Module.titleEn / titleFr / descriptionEn / descriptionFr`, bilingual quiz prompts, fr-CA email templates. AODA WCAG 2.1 AA tracked for ON expansion.
-- **PHIPAA per-record access logging.** Every read of a Staff / Assignment / Certificate writes a `RecordAccessLog` row. Append-only `AuditEvent` ledger covers state changes (assignment.completed, certificate.issued, subscription.upserted, etc.).
+- **PHIPAA per-record access logging.** Every read of a Staff / Assignment / Certificate writes a `RecordAccessLog` row. Append-only `AuditEvent` ledger covers state changes (assignment.completed, certificate.issued, staff.invited, etc.).
 - **Data residency.** All persistence (RDS, S3) deploys to `ca-central-1`. Operators sign a DPA at onboarding (`Organization.dataResidencyAttestedAt`).
 
 ## Quick start
@@ -68,7 +77,6 @@ pnpm dev
 ### Webhooks (local)
 
 ```bash
-stripe listen --forward-to localhost:4000/webhooks/stripe
 # Mux + Clerk: tunnel via cloudflared / ngrok and configure in their dashboards
 ```
 
@@ -83,25 +91,21 @@ docker-compose.yml   Postgres + Redis for local dev
 
 ## What's done
 
-- **Multi-tenant schema.** `Organization → Site → Staff` with `OrgPermission` (STAFF / SITE_ADMIN / ORG_ADMIN), per-jurisdiction `Role` lookup, bilingual `Module / Lesson / Quiz / Question`, `RequiredTraining` (per role × site × jurisdiction), `Assignment / Attempt / Certificate`, `Subscription`, `RosterImport`, `AuditEvent`, `RecordAccessLog`.
+- **Multi-tenant schema.** `Organization → Site → Staff` with `OrgPermission` (STAFF / SITE_ADMIN / ORG_ADMIN), per-jurisdiction `Role` lookup, bilingual `Module / Lesson / Quiz / Question`, `RequiredTraining` (per role × site × jurisdiction), `Assignment / Attempt / Certificate`, `Invitation`, `LessonProgress`, `RosterImport`, `AuditEvent`, `RecordAccessLog`.
 - **Auth.** Clerk on web (`/sign-in`, `/sign-up`, `/dashboard` protected), global Clerk JWT guard on the API, `CurrentStaff()` decorator resolves tenant context.
 - **Modules API.** `GET /modules` and `GET /modules/:slug` org-scoped + jurisdiction-filtered.
 - **Mux.** Signed playback gated by `Assignment` (not Enrollment). Org-admin-only direct upload for org-private modules. Webhook signature-verified.
-- **Stripe.** Per-seat subscription checkout for org admins (`POST /billing/checkout`) + signature-verified webhook handler that upserts `Subscription` rows.
 - **Email.** Bilingual EN/FR templates for assignment.assigned, assignment.due-soon, certificate.issued. Resend in prod, dev-mock in local.
 - **Audit + access log.** `AuditService.record()` for state changes. `RecordAccessLog` model ready to be written from the access middleware (next batch).
 
-## What's next (Phase 2 continuation)
+## What's next
 
-1. **Operator onboarding.** Org create flow, magic-link staff invites, Clerk Organizations integration.
-2. **Roster CSV import.** Staff bulk-create with validation, error report.
-3. **RequiredTraining → Assignment generator.** Job that materializes assignments from policy.
-4. **Quiz attempt + attestation flow.** Submit, score, sign, hash, persist.
-5. **Certificate PDF generation.** Signed, S3-stored, sha256-tracked.
-6. **Inspector exports.** Per-site / per-topic / per-date-range PDF + CSV.
-7. **PHIPAA hardening.** `RecordAccessLog` middleware on all PHI-touching endpoints, retention scheduler, role-scoped access checks.
-8. **Authoring the 8 modules.** Scripts, slides, EN/FR captions, quiz banks.
+Everything above is built and verified end-to-end (see `docs/UX_VERIFIED.md`).
+The roadmap lives in `LMS_COMPLETION_PLAN.md`: Phase B (author the home-care
+catalog — regulatory confirmation first), the gated Clerk→ElderCare-OIDC swap
+(LMS-M6 steps 4–5), the ElderCare certificate flow-back + entitlement (Phase D),
+and go-live hardening (Phase E). `LMS_PRE_LAUNCH_AUDIT.md` tracks safety state.
 
 ## Why this stack vs. the original list
 
-Dropped GraphQL (one client), Elasticsearch (Postgres FTS later), Kubernetes (Fly.io / Render for the first year), FastAPI sidecar (no AI features yet). Removed the consumer-marketplace surface (creator Stripe Connect, public catalog, per-course checkout) — Maple Care sells subscriptions to operators, not courses to individuals.
+Dropped GraphQL (one client), Elasticsearch (Postgres FTS later), Kubernetes (Fly.io / Render for the first year), FastAPI sidecar (no AI features yet), and the consumer-marketplace surface (public catalog, per-course checkout). Billing was dropped entirely in 2026-07 — Maple Care is an ElderCare-entitled feature, so ElderCare's subscription is the only bill an agency sees.
