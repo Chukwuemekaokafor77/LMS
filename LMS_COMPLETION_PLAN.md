@@ -261,30 +261,75 @@ certificate — driven end-to-end, not just typechecking.
   checklist. Fix whatever's build-but-broken (expect some, per the audit's H3 class).
 
 ### Phase B — Author the training catalog (product + SME)
-**Goal:** real compliance content, bilingual EN/FR (statutory in NB).
+**Goal:** a real modular competency library (see B0 findings below), bilingual
+EN/FR (NB's official-languages reality + fr-CA agencies; not a claim of
+provincial mandate).
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
   for the actual training material. **Not a code blocker** for A/C/D but blocks a real
   pilot.
 
-**B0 — Pick the catalog: home-care track first (see §1.5).** For the ElderCare
-integration the first catalog to author is the **home-care track**, not the LTC one:
-- **Regulatory homework FIRST (non-code, gating):** confirm the *actually mandated*
-  home-support / home-care training list for NB (then NS/PE/NL) against the real
-  regulations — it rests on a different basis than the Nursing Homes Act 8-module list.
-  Do not author or market as "compliance" until this is confirmed.
-- **Reframe the transferable modules** for the in-home context: WHMIS / Privacy /
-  Abuse-&-Reporting ~unchanged; IPAC + Falls reframed (no facility team, client's home);
-  Responsive Behaviours transfers; Resident Rights → **client rights in the home**;
-  drop/replace facility Fire Safety.
-- **Author the net-new home-care modules:** lone/solo-worker safety, safe travel between
-  clients, working in a client's private home (boundaries/family/pets), emergency
-  response when alone with a client.
-- **Config:** add the home-support/PSW `Role` rows (Seam 2a); build the home-care
-  `RequiredTraining` policy set; repurpose `Site` as **branch/service-area** (or make it
-  optional) since home care has no licensed facility; add a home-care inspector-export
-  template variant.
+**B0 — regulatory basis: ✅ DONE 2026-07-18 (owner research). Findings below
+supersede the earlier assumptions and reshape Phase B.**
+
+**Finding 1 — NB, PE, and NL have NO single provincially mandated home-support
+training list.** Home support is not presented as a regulated occupation in
+those provinces; the practical standard is **employer- and program-driven**
+(public occupation summaries cite: some secondary education, college/home-support
+courses, first aid certification, and training in elderly / disability /
+convalescent care — *as employer requirements, not statute*).
+- **Positioning guardrail:** never market the catalog as "provincially mandated"
+  in NB/PE/NL. The honest claim — and the better product story — is:
+  *"your agency defines its training policy; Maple Care delivers, tracks, and
+  proves it."* That is literally what `RequiredTraining` is (per-org, per-role,
+  per-site policy), so the engine fits the real market *better* than a fixed
+  statutory list would have.
+
+**Finding 2 — NS is the credentialed outlier.** Continuing Care Assistant (CCA)
+is a real certification path: a CCA program through a **licensed education
+provider** + the provincial CCA Certification Exam, with recognized prior
+learning (RPL) routes, tied to licensed facilities and publicly funded home-care
+agencies.
+- **Positioning guardrail:** Maple Care can deliver CCA **prep, exam prep, and
+  annual continuing education**, and can capture RPL evidence — it must never
+  present an LMS certificate as CCA certification (we are not a licensed CCA
+  education provider).
+
+**Finding 3 — several "required" items are externally issued credentials, not
+deliverable training:** First Aid, CPR, vulnerable-sector/background checks.
+These are *tracked with expiry*, not taught by video. **Decision: that tracking
+belongs to ElderCare's existing `StaffCertification` + credential-expiry
+alerting (Seam 3), not to a duplicate LMS build.** The LMS delivers courses and
+flows its own certificates back; externally issued credentials are recorded on
+the ElderCare side. (Pre-integration interim, if ever needed: a thin
+evidence-upload feature — not planned.)
+
+**Catalog architecture (decided): a modular competency library, not one
+"mandatory track."** Three layers, all expressible in the existing schema:
+1. **Core modules (all provinces — `Module.jurisdiction = null`):** home-support
+   fundamentals; elder-care & disability-care basics; convalescent-care basics;
+   IPAC (in-home); safe lifting / client handling; falls & home safety; dementia
+   / responsive behaviours; person-centred care; client communication;
+   documentation, care notes & incident reporting; privacy/confidentiality
+   (PHIPAA/PIPEDA); medication support (where applicable); lone-worker safety;
+   safe travel between clients; working in a private home (boundaries, family,
+   pets); solo emergency response.
+2. **Province-specific modules (`Module.jurisdiction = NB|NS|PE|NL`):** NS CCA
+   prep / exam prep / CE; per-province privacy statutes where they diverge;
+   employer-orientation templates per province.
+3. **Role pathways (`Role` rows × `RequiredTraining` policy):** home support
+   worker, NS CCA, supervisor/coordinator, agency admin — each province gets its
+   role rows (Seam 2a mapping from ElderCare roles) and a default policy set
+   agencies can adopt then edit.
+
+Already-supported mechanics (no build needed): expiry/refresher scheduling
+(`TrainingCadence` + due-soon emails), proof-of-completion (`Certificate` +
+sha256), quiz/attempt records with attestation, onboarding checklists
+(materialization on staff creation = the dashboard's outstanding list).
+Remaining config work from §1.5 stands: repurpose `Site` as branch/service-area,
+agency-audit export template (drop the "NB nursing-home inspection" framing).
+
 - ~~The LTC catalog remains a parallel track under the same engine — author it when an
   LTC operator is the customer.~~ **Dropped 2026-07-18: home-care only.**
 
@@ -363,9 +408,14 @@ and the learning experience proven, without touching ElderCare's auth.
 1. **LTC vs home-care — DECIDED (updated 2026-07-18): home-care ONLY.** The LTC
    track is dropped, not deferred (see the amendments block at top). Maple Care is a
    home-care training product distributed through ElderCare, and access is an
-   ElderCare entitlement (Stripe removed). Gating non-code item unchanged: confirm
+   ElderCare entitlement (Stripe removed). ~~Gating non-code item unchanged: confirm
    the real home-care mandatory-training list (different regulatory basis than the
-   Nursing Homes Act) before authoring.
+   Nursing Homes Act) before authoring.~~ **Done 2026-07-18 — see the B0 findings
+   in Phase B:** NB/PE/NL are employer-driven (no provincial mandate → position as
+   policy-driven competency library, never "provincially mandated"); NS has the
+   CCA certification path (prep/CE only — we are not a licensed CCA provider);
+   First Aid/CPR/background checks are externally issued credentials tracked on
+   the ElderCare side (Seam 3), not LMS courseware.
 2. **The OIDC prerequisite is the real cost.** Everything downstream of identity gates
    on a security-sensitive ElderCare change. Budget it explicitly or keep the LMS on
    Clerk with a signed DPA as an *interim* (the audit's stated minimum) — but that
