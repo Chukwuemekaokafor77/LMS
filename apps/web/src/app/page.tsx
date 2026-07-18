@@ -103,8 +103,8 @@ export default function HomePage() {
           />
           <Feature
             icon={Users}
-            title="Per-seat pricing"
-            body="One subscription per home. Add staff via CSV roster import — no per-course fees."
+            title="Included with ElderCare"
+            body="No separate bill — training comes with your ElderCare subscription. Add staff via CSV roster import."
           />
         </div>
       </section>

@@ -207,6 +207,18 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-18_ — **Stripe decommissioned (owner decision — see the direction
+  amendments in [LMS_COMPLETION_PLAN.md](LMS_COMPLETION_PLAN.md)):** the LMS is
+  an **ElderCare-entitled** product (home-care only; training is an ElderCare
+  feature priced in ElderCare's billing — nobody pays twice). Removed: the
+  billing module (checkout endpoint, Stripe webhook + service), the
+  `Subscription` model + `Organization.stripeCustomerId` (drop migration; tables
+  were empty — no customers exist), the `stripe-retry` queue, the Stripe deps/
+  env/dummy-secrets, the admin billing page, and the C2 Stripe-webhook tests
+  (the Mux/Clerk signature suites are unchanged). Replacement is the Phase-D
+  ElderCare entitlement flow-in. **Phase E and the LMS-M1 rotation scope shrink
+  accordingly — LMS-M1 remains the only open finding (now Clerk/Mux/AWS/Resend
+  only).**
 - _2026-07-18_ — **LMS-M6 pre-gate steps 1–3 done** (all LMS-internal; the gated
   steps 4–5 still await the ElderCare OIDC provider). Step 1: `IdentityProvider`
   seam behind the guard + current-user (Clerk now one binding away from

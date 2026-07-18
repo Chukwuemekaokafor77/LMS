@@ -4,7 +4,6 @@ import { BullModule } from "@nestjs/bullmq";
 
 export const QUEUES = {
   email: "email",
-  stripeRetry: "stripe-retry",
   roster: "roster-import",
   materialize: "assignment-materialize",
   certificate: "certificate-generate",
@@ -35,7 +34,6 @@ export const QUEUES = {
     }),
     BullModule.registerQueue(
       { name: QUEUES.email },
-      { name: QUEUES.stripeRetry },
       { name: QUEUES.roster },
       { name: QUEUES.materialize },
       { name: QUEUES.certificate },

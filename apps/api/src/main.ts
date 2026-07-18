@@ -5,7 +5,7 @@ import { AppModule } from "./app.module";
 import { tenantScopeMiddleware } from "./tenant/tenant-scope.middleware";
 
 async function bootstrap() {
-  // rawBody: true makes req.rawBody available for Stripe/Mux/Clerk
+  // rawBody: true makes req.rawBody available for Mux/Clerk
   // signature verification while still parsing JSON normally.
   const app = await NestFactory.create(AppModule, {
     cors: true,

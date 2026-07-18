@@ -53,7 +53,6 @@ async function wipe(db: PrismaClient) {
   await db.lesson.deleteMany({});
   await db.requiredTraining.deleteMany({});
   await db.staff.deleteMany({});
-  await db.subscription.deleteMany({});
   await db.site.deleteMany({});
   await db.module.deleteMany({});
   await db.user.deleteMany({});

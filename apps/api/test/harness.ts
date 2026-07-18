@@ -25,7 +25,6 @@ import { tenantScopeMiddleware } from "../src/tenant/tenant-scope.middleware";
 
 // Stable webhook secrets the signature tests sign with. The Clerk/svix one must
 // be a valid base64 body after the `whsec_` prefix.
-export const TEST_STRIPE_WEBHOOK_SECRET = "whsec_stripe_dummy";
 export const TEST_MUX_WEBHOOK_SECRET = "mux_webhook_dummy_secret";
 export const TEST_CLERK_WEBHOOK_SECRET =
   "whsec_" + Buffer.from("clerk-webhook-test-secret-key!!!").toString("base64");
@@ -45,9 +44,6 @@ function setDummyEnv() {
     MUX_WEBHOOK_SECRET: TEST_MUX_WEBHOOK_SECRET,
     MUX_SIGNING_KEY_ID: "test",
     RESEND_API_KEY: "re_test",
-    STRIPE_SECRET_KEY: "sk_test_dummy",
-    STRIPE_WEBHOOK_SECRET: TEST_STRIPE_WEBHOOK_SECRET,
-    STRIPE_PRICE_PER_SEAT_ID: "price_test",
     EMAIL_FROM: "test@example.com",
     WEB_BASE_URL: "http://localhost:3000",
   };
