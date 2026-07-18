@@ -1,12 +1,17 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
-import { ClerkService } from "./clerk.service";
+import {
+  IDENTITY_PROVIDER,
+  type IdentityProvider,
+  type VerifiedIdentity,
+} from "./identity-provider";
 import { CurrentUserService } from "./current-user.service";
 import { IS_PUBLIC_KEY } from "./public.decorator";
 import { PrismaService } from "../prisma/prisma.service";
@@ -22,7 +27,7 @@ export type AuthedRequest = Request & {
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
   constructor(
-    private readonly clerk: ClerkService,
+    @Inject(IDENTITY_PROVIDER) private readonly identity: IdentityProvider,
     private readonly currentUser: CurrentUserService,
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
@@ -40,18 +45,15 @@ export class ClerkAuthGuard implements CanActivate {
     const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
     if (!token) throw new UnauthorizedException("Missing bearer token");
 
-    let payload;
+    let identity: VerifiedIdentity;
     try {
-      payload = await this.clerk.verifyBearer(token);
+      identity = await this.identity.verifyBearer(token);
     } catch {
       throw new UnauthorizedException("Invalid token");
     }
 
-    const clerkUserId = payload.sub;
-    if (!clerkUserId) throw new UnauthorizedException("Invalid token subject");
-
-    const user = await this.currentUser.upsertFromClerk(clerkUserId);
-    req.auth = { clerkUserId, sessionId: payload.sid };
+    const user = await this.currentUser.upsertFromIdentity(identity.externalId);
+    req.auth = { clerkUserId: identity.externalId, sessionId: identity.sessionId };
     req.user = { id: user.id, email: user.email };
 
     // Bootstrap lookup: this is the query that *discovers* the actor's org, so

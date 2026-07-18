@@ -1,33 +1,39 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { ClerkService } from "./clerk.service";
+import {
+  IDENTITY_PROVIDER,
+  type IdentityProvider,
+} from "./identity-provider";
 
 @Injectable()
 export class CurrentUserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly clerk: ClerkService,
+    @Inject(IDENTITY_PROVIDER) private readonly identity: IdentityProvider,
   ) {}
 
-  async upsertFromClerk(clerkUserId: string) {
+  /**
+   * Resolve (or provision on first sight) the local User for a verified
+   * identity subject. The DB column is still `clerkUserId` — it becomes
+   * `externalAuthId` in the LMS-M6 step-2 rename.
+   */
+  async upsertFromIdentity(externalId: string) {
     const existing = await this.prisma.user.findUnique({
-      where: { clerkUserId },
+      where: { clerkUserId: externalId },
     });
     if (existing) return existing;
 
-    const cu = await this.clerk.getClient().users.getUser(clerkUserId);
-    const email = cu.primaryEmailAddress?.emailAddress;
-    if (!email) {
-      throw new Error(`Clerk user ${clerkUserId} has no primary email`);
-    }
-    const name =
-      [cu.firstName, cu.lastName].filter(Boolean).join(" ").trim() || null;
+    const profile = await this.identity.fetchProfile(externalId);
 
     // Email may already exist from a prior auth — link it.
     return this.prisma.user.upsert({
-      where: { email },
-      create: { clerkUserId, email, name },
-      update: { clerkUserId, name: name ?? undefined },
+      where: { email: profile.email },
+      create: {
+        clerkUserId: externalId,
+        email: profile.email,
+        name: profile.name,
+      },
+      update: { clerkUserId: externalId, name: profile.name ?? undefined },
     });
   }
 }
