@@ -11,6 +11,9 @@ type Jobs = {
   "assignment.assigned": { assignmentId: string };
   "assignment.due-soon": { assignmentId: string };
   "certificate.issued": { certificateId: string };
+  // The raw invite token exists only in this job payload and the email it
+  // renders — the DB stores its SHA-256.
+  "staff.invited": { invitationId: string; token: string };
 };
 
 @Processor(QUEUES.email)
@@ -107,8 +110,65 @@ export class EmailProcessor extends WorkerHost {
       return;
     }
 
+    if (job.name === "staff.invited") {
+      const { invitationId, token } = job.data as Jobs["staff.invited"];
+      const inv = await this.prisma.invitation.findUnique({
+        where: { id: invitationId },
+        include: { org: true, role: true },
+      });
+      if (!inv || inv.revokedAt || inv.acceptedAt) return; // superseded
+      // The invitee has no User yet — use the org's preferred locale.
+      const locale = inv.org.preferredLocale;
+      await this.sender.send({
+        from,
+        to: inv.email,
+        subject:
+          locale === "fr-CA"
+            ? `Invitation à rejoindre ${inv.org.name} sur Maple Care`
+            : `You're invited to join ${inv.org.name} on Maple Care`,
+        html: invitationEmailHtml(inv, token, locale),
+      });
+      return;
+    }
+
     this.log.warn(`Unknown email job ${job.name}`);
   }
+}
+
+function invitationEmailHtml(
+  inv: {
+    expiresAt: Date;
+    org: { name: string };
+    role: { labelEn: string; labelFr: string };
+  },
+  token: string,
+  locale: string,
+): string {
+  const base = process.env.WEB_BASE_URL ?? "http://localhost:3000";
+  const link = `${base}/onboarding/accept-invite?token=${encodeURIComponent(token)}`;
+  const expires = inv.expiresAt.toLocaleDateString(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  if (locale === "fr-CA") {
+    return `
+      <h1>Bonjour</h1>
+      <p><strong>${esc(inv.org.name)}</strong> vous invite à rejoindre Maple Care
+      en tant que <strong>${esc(inv.role.labelFr)}</strong> pour compléter vos
+      formations obligatoires.</p>
+      <p><a href="${link}">Accepter l'invitation</a></p>
+      <p>Ce lien expire le ${expires}.</p>
+    `;
+  }
+  return `
+    <h1>Hello</h1>
+    <p><strong>${esc(inv.org.name)}</strong> has invited you to join Maple Care
+    as <strong>${esc(inv.role.labelEn)}</strong> to complete your mandatory
+    training.</p>
+    <p><a href="${link}">Accept the invitation</a></p>
+    <p>This link expires on ${expires}.</p>
+  `;
 }
 
 function assignmentEmailHtml(

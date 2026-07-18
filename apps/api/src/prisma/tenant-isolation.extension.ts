@@ -21,6 +21,7 @@ export const PHI_MODELS = new Set([
   "Certificate",
   "RosterImport",
   "LessonProgress",
+  "Invitation",
 ]);
 
 /** Operations whose `where` we scope by injecting `orgId` as an AND filter. */

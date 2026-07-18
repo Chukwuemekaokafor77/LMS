@@ -32,6 +32,14 @@ export class StaffController {
     return this.staff.list(actor);
   }
 
+  // Declared before ":id" so "invitations" isn't captured as a staff id.
+  @Get("invitations")
+  @SkipPhiAccess()
+  async pendingInvitations(@CurrentStaff() actor: StaffContext | undefined) {
+    if (!actor) throw new ForbiddenException("No org context");
+    return this.invitations.listPending(actor);
+  }
+
   @Get(":id")
   @PhiAccess({ entityType: "Staff", action: "read" })
   async byId(

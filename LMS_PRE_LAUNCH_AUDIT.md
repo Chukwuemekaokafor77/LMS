@@ -207,6 +207,18 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-18_ — **LMS-M6 pre-gate steps 1–3 done** (all LMS-internal; the gated
+  steps 4–5 still await the ElderCare OIDC provider). Step 1: `IdentityProvider`
+  seam behind the guard + current-user (Clerk now one binding away from
+  swappable). Step 2: `User.clerkUserId → externalAuthId` via a hand-written
+  RENAME migration (auth links preserved). Step 3: **LMS-native `Invitation`
+  table** (SHA-256 token, email-bound, single-use, 30-day expiry, org-scoped —
+  registered as a guardrail PHI model) replaces Clerk invitations; the Clerk
+  webhook is identity-sync only (publicMetadata materialization removed); accept
+  flow lives at `POST /onboarding/accept-invitation` + the accept-invite page.
+  Lifecycle + cross-tenant coverage in
+  [test/invitations.e2e-spec.ts](apps/api/test/invitations.e2e-spec.ts).
+  **LMS-M1 remains the only open finding.**
 - _2026-07-17_ — **Phase A UX verification pass (resume session).** Every learner +
   admin surface driven end-to-end with real Clerk dev-instance auth (no stubs) —
   see [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md). Safety-relevant changes: the new

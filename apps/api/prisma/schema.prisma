@@ -105,6 +105,7 @@ model Organization {
   attempts          Attempt[]
   certificates      Certificate[]
   lessonProgress    LessonProgress[]
+  invitations       Invitation[]
 
   @@index([jurisdiction])
 }
@@ -121,6 +122,7 @@ model Site {
 
   staff                  Staff[]
   requiredTrainings      RequiredTraining[]
+  invitations            Invitation[]
 
   @@index([orgId])
 }
@@ -136,6 +138,7 @@ model Role {
 
   staff             Staff[]
   requiredTrainings RequiredTraining[]
+  invitations       Invitation[]
 
   @@index([jurisdiction])
 }
@@ -260,6 +263,32 @@ model Question {
   position    Int
 
   @@index([quizId, position])
+}
+
+// LMS-native staff invitation (LMS-M6 step 3 — replaces Clerk invitations +
+// the webhook publicMetadata materialization). The raw token is emailed once
+// and never stored; only its SHA-256 lands here. Org-scoped person data —
+// covered by the tenant-isolation guardrail.
+model Invitation {
+  id             String        @id @default(cuid())
+  orgId          String
+  org            Organization  @relation(fields: [orgId], references: [id])
+  siteId         String?
+  site           Site?         @relation(fields: [siteId], references: [id])
+  email          String
+  roleCode       String
+  role           Role          @relation(fields: [roleCode], references: [code])
+  orgPermission  OrgPermission @default(STAFF)
+  employmentType String?       // FT | PT | CASUAL
+  tokenHash      String        @unique
+  invitedById    String        // User.id of the inviting admin
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([email])
 }
 
 // ── Compliance policy + assignments ──────────────────────────────────────

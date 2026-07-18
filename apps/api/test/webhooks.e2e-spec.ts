@@ -169,7 +169,6 @@ describe("LMS-C2 webhooks", () => {
           primary_email_address_id: "em_1",
           first_name: "Invited",
           last_name: "User",
-          public_metadata: { orgId: base.orgId, roleCode: base.roleCode, orgPermission: "STAFF" },
         },
       });
 
@@ -185,7 +184,7 @@ describe("LMS-C2 webhooks", () => {
         .expect(400);
     });
 
-    it("materializes a User + Staff from an invitation on a valid event", async () => {
+    it("upserts the User on a valid event — and no longer materializes Staff (LMS-M6 step 3)", async () => {
       const payload = userCreated("clerk_invited_c2");
       const headers = clerkHeaders(payload);
       await t
@@ -198,9 +197,10 @@ describe("LMS-C2 webhooks", () => {
 
       const user = await db.user.findUnique({ where: { externalAuthId: "clerk_invited_c2" } });
       expect(user).not.toBeNull();
+      // Staff creation moved to the LMS-native invitation accept flow
+      // (invitations.e2e-spec.ts) — the webhook is identity sync only.
       const staff = await db.staff.findUnique({ where: { userId: user!.id } });
-      expect(staff?.orgId).toBe(base.orgId);
-      expect(staff?.roleCode).toBe(base.roleCode);
+      expect(staff).toBeNull();
     });
   });
 });
