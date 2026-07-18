@@ -21,7 +21,6 @@ export default async function AdminLayout({
         <NavItem href="/admin/required-trainings">Required training</NavItem>
         <NavItem href="/admin/reports">Reports</NavItem>
         <NavItem href="/admin/roster">Roster import</NavItem>
-        <NavItem href="/admin/billing">Billing</NavItem>
       </aside>
       <section className="col-span-9">{children}</section>
     </div>

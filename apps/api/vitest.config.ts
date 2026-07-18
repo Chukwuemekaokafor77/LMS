@@ -39,7 +39,6 @@ export default defineConfig({
         "src/auth/clerk.service.ts",
         "src/storage/s3.service.ts",
         "src/video/mux.service.ts",
-        "src/billing/stripe.service.ts",
       ],
       thresholds: { lines: 60, functions: 60, statements: 60 },
     },

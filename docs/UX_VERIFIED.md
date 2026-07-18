@@ -50,9 +50,10 @@ Legend: `[x]` driven and working · `[~]` verified to the provider boundary
       (`row 4: invalid email`) recorded on the import
 - [x] Reports: JSON + CSV (inspector columns incl. attestation hash and
       certificate sha256) + PDF (valid bytes)
-- [~] Billing checkout — wired to the Stripe boundary; provider failures now
-      return an opaque 502 instead of leaking Stripe's error/status *(PR #14)*;
-      needs a real test key to drive checkout end-to-end
+- ~~Billing checkout~~ — **removed 2026-07-18**: the LMS is ElderCare-entitled
+      (training is an ElderCare feature; ElderCare bills). No billing module,
+      no `Subscription` model, no Stripe keys; the entitlement flow-in lands
+      with Phase D.
 - [x] Onboarding + accept-invite + sign-in/up pages render; dashboard shows
       outstanding/completed with certificate download button
 

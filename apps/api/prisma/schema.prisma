@@ -56,13 +56,6 @@ enum TrainingCadence {
   THREE_YEARS
 }
 
-enum SubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-}
-
 // ── Identity ─────────────────────────────────────────────────────────────
 
 model User {
@@ -90,7 +83,6 @@ model Organization {
   jurisdiction            Jurisdiction
   primaryRegulator        String?      // e.g. "NB Dept. of Social Development"
   preferredLocale         String       @default("en-CA")
-  stripeCustomerId        String?      @unique
   dataResidencyAttestedAt DateTime?    // operator signs DPA / residency attestation
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
@@ -99,7 +91,6 @@ model Organization {
   staff             Staff[]
   modules           Module[]
   requiredTrainings RequiredTraining[]
-  subscriptions     Subscription[]
   rosterImports     RosterImport[]
   assignments       Assignment[]
   attempts          Attempt[]
@@ -371,24 +362,6 @@ model Certificate {
   expiresAt    DateTime?
 
   @@index([sha256])
-}
-
-// ── Billing ──────────────────────────────────────────────────────────────
-
-model Subscription {
-  id                   String             @id @default(cuid())
-  orgId                String
-  org                  Organization       @relation(fields: [orgId], references: [id])
-  stripeSubscriptionId String             @unique
-  status               SubscriptionStatus
-  seats                Int
-  pricePerSeatCents    Int
-  currency             String             @default("CAD")
-  currentPeriodEnd     DateTime
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-
-  @@index([orgId])
 }
 
 // ── Operations ───────────────────────────────────────────────────────────
