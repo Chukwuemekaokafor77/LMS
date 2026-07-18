@@ -77,6 +77,8 @@ const muxStub = {
 type AuthedRequests = {
   get: (url: string) => request.Test;
   post: (url: string) => request.Test;
+  patch: (url: string) => request.Test;
+  put: (url: string) => request.Test;
   delete: (url: string) => request.Test;
 };
 
@@ -127,6 +129,8 @@ export async function setupTestApp(opts: SetupOptions = {}): Promise<TestApp> {
     return {
       get: (url) => apply(server().get(url)),
       post: (url) => apply(server().post(url)),
+      patch: (url) => apply(server().patch(url)),
+      put: (url) => apply(server().put(url)),
       delete: (url) => apply(server().delete(url)),
     };
   };
