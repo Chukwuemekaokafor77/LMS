@@ -8,6 +8,7 @@ import { AuditModule } from "./audit/audit.module";
 import { QueueModule } from "./queue/queue.module";
 import { StorageModule } from "./storage/storage.module";
 import { ModulesModule } from "./modules/modules.module";
+import { AuthoringModule } from "./authoring/authoring.module";
 import { VideoModule } from "./video/video.module";
 import { EmailModule } from "./email/email.module";
 import { MeModule } from "./me/me.module";
@@ -31,6 +32,7 @@ import { RetentionModule } from "./retention/retention.module";
     StaffModule,
     AuthModule,
     ModulesModule,
+    AuthoringModule,
     VideoModule,
     EmailModule,
     MeModule,
