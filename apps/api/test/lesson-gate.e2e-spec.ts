@@ -20,9 +20,9 @@ let fx: Fixtures;
 let rawDb: PrismaClient;
 
 const tok = {
-  aAdmin: () => fx.A.admin.clerkUserId,
-  aWorker: () => fx.A.worker.clerkUserId,
-  bWorker: () => fx.B.worker.clerkUserId,
+  aAdmin: () => fx.A.admin.externalAuthId,
+  aWorker: () => fx.A.worker.externalAuthId,
+  bWorker: () => fx.B.worker.externalAuthId,
 };
 
 const DAY = 86_400_000;

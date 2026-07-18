@@ -19,7 +19,7 @@ import type { StaffContext } from "../tenant/tenant.types";
 import { runAsSystem, setOrgContext } from "../tenant/tenant-context";
 
 export type AuthedRequest = Request & {
-  auth?: { clerkUserId: string; sessionId?: string };
+  auth?: { externalAuthId: string; sessionId?: string };
   user?: { id: string; email: string };
   staff?: StaffContext;
 };
@@ -53,7 +53,7 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     const user = await this.currentUser.upsertFromIdentity(identity.externalId);
-    req.auth = { clerkUserId: identity.externalId, sessionId: identity.sessionId };
+    req.auth = { externalAuthId: identity.externalId, sessionId: identity.sessionId };
     req.user = { id: user.id, email: user.email };
 
     // Bootstrap lookup: this is the query that *discovers* the actor's org, so

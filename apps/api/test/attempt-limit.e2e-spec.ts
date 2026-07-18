@@ -29,7 +29,7 @@ describe("quiz attempt cap", () => {
     const worker = fx.A.worker;
     // Satisfy the lesson gate first (the shared module has one READY lesson).
     await t
-      .as(worker.clerkUserId)
+      .as(worker.externalAuthId)
       .post(`/lessons/${fx.lessonId}/complete`)
       .expect(201);
 
@@ -46,14 +46,14 @@ describe("quiz attempt cap", () => {
     let lastAttemptId = "";
     for (let i = 0; i < MAX_ATTEMPTS_PER_ASSIGNMENT; i++) {
       const res = await t
-        .as(worker.clerkUserId)
+        .as(worker.externalAuthId)
         .post(`/assignments/${assignment.id}/attempts`);
       expect(res.status).toBe(201);
       lastAttemptId = res.body.id;
     }
 
     const blocked = await t
-      .as(worker.clerkUserId)
+      .as(worker.externalAuthId)
       .post(`/assignments/${assignment.id}/attempts`);
     expect(blocked.status).toBe(400);
     expect(blocked.body.message).toMatch(/attempt limit reached/i);
@@ -63,7 +63,7 @@ describe("quiz attempt cap", () => {
       where: { quiz: { moduleId: fx.moduleId } },
     });
     const submit = await t
-      .as(worker.clerkUserId)
+      .as(worker.externalAuthId)
       .post(`/assignments/attempts/${lastAttemptId}/submit`)
       .send({
         responses: [
@@ -76,7 +76,7 @@ describe("quiz attempt cap", () => {
 
   it("exposes maxAttempts on the learner assignment read", async () => {
     const res = await t
-      .as(fx.B.worker.clerkUserId)
+      .as(fx.B.worker.externalAuthId)
       .get(`/assignments/${fx.B.assignmentId}`)
       .expect(200);
     expect(res.body.maxAttempts).toBe(MAX_ATTEMPTS_PER_ASSIGNMENT);

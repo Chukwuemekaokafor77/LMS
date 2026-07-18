@@ -196,7 +196,7 @@ describe("LMS-C2 webhooks", () => {
         .send(payload)
         .expect(200);
 
-      const user = await db.user.findUnique({ where: { clerkUserId: "clerk_invited_c2" } });
+      const user = await db.user.findUnique({ where: { externalAuthId: "clerk_invited_c2" } });
       expect(user).not.toBeNull();
       const staff = await db.staff.findUnique({ where: { userId: user!.id } });
       expect(staff?.orgId).toBe(base.orgId);
