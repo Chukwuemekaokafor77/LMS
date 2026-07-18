@@ -9,6 +9,24 @@ products join.
 **Written:** 2026-07-17, from a code-read of both repos (`C:\Users\emekamichael\LMS`
 and the `psw` ElderCare repo). Paths are relative to each repo's root.
 
+> **⚠️ Direction amendments — 2026-07-18 (owner decisions, supersede anything
+> below that conflicts):**
+> 1. **Home-care only. The LTC parallel track is dropped.** Maple Care is a
+>    home-care training tool distributed through ElderCare — the §1 value
+>    proposition ("training shows up inside the ElderCare tool you already run
+>    your agency in") *is* the direction, not one of two tracks. The engine
+>    stays setting-agnostic (that costs nothing), but no LTC catalog, LTC
+>    role-set, or LTC inspector-export work is planned. Re-opening LTC later is
+>    a catalog/config decision, not a rebuild.
+> 2. **Stripe is decommissioned; the LMS is an ElderCare-entitled product.**
+>    An agency's access to training comes from its ElderCare relationship —
+>    training is an ElderCare *feature*, priced inside ElderCare's own billing.
+>    Nobody pays twice. The LMS billing module / `Subscription` model / Stripe
+>    keys are removed pre-launch (no customers exist); the replacement is an
+>    ElderCare-fed **entitlement** (OIDC claims or webhook → seats/status),
+>    which lands with Phases C–D. Phase E loses the whole Stripe/Tax workload,
+>    and LMS-M1's rotation scope shrinks by one provider.
+
 ---
 
 ## 0. Verified current state (don't re-derive)
@@ -73,8 +91,9 @@ seams so they present as one platform:
   alerting** (`StaffCertification` + `CredentialType` catalog + the daily
   credential-expiry scan).
 - **Maple Care LMS = system of record for training delivery + compliance evidence.**
-  Video lessons, quizzes, per-jurisdiction required-training policy, inspector exports,
-  per-seat billing.
+  Video lessons, quizzes, per-jurisdiction required-training policy, inspector exports.
+  *(Amended 2026-07-18: billing is not an LMS concern — access is an ElderCare
+  entitlement; per-seat Stripe billing was removed.)*
 
 The value proposition of integrating (why this is worth doing): **"Your caregivers'
 mandatory training is assigned, delivered, and tracked — and shows up as
@@ -201,10 +220,13 @@ separately. The 8-module list is LTC-derived; what is *actually legally mandated
 home-support worker must be confirmed against the real regulations before it is authored
 and sold as compliance. This is regulatory research, not engineering.
 
-**Net recommendation:** run Maple Care as a **two-track compliance platform under one
-engine** — LTC and home-care catalogs side by side. For the ElderCare integration,
-author the home-care track first, repurpose `Site` as branch/service-area, reframe the
-transferable modules, and add the net-new home-care ones.
+**Net recommendation:** ~~run Maple Care as a **two-track compliance platform under one
+engine** — LTC and home-care catalogs side by side.~~ **Superseded 2026-07-18: home-care
+only — the LTC track is dropped (owner decision; see the amendments block at top).**
+For the ElderCare integration, author the home-care catalog, repurpose `Site` as
+branch/service-area, reframe the transferable modules, and add the net-new home-care
+ones. The engine remains setting-agnostic, so an LTC catalog stays *possible* later,
+but it is not planned.
 
 ---
 
@@ -263,8 +285,8 @@ integration the first catalog to author is the **home-care track**, not the LTC 
   `RequiredTraining` policy set; repurpose `Site` as **branch/service-area** (or make it
   optional) since home care has no licensed facility; add a home-care inspector-export
   template variant.
-- The LTC catalog remains a parallel track under the same engine — author it when an LTC
-  operator is the customer.
+- ~~The LTC catalog remains a parallel track under the same engine — author it when an
+  LTC operator is the customer.~~ **Dropped 2026-07-18: home-care only.**
 
 ### Phase C — Remove Clerk, federate from ElderCare (integration core)
 **Hard gate:** ElderCare can issue verifiable OIDC tokens (`psw` prerequisite — see §3).
@@ -287,8 +309,14 @@ integration the first catalog to author is the **home-care track**, not the LTC 
 7. **Security re-review** (touches the audited auth core) + verify: no Clerk in the
    auth path, identity data in Canada.
 
-### Phase D — Certificate flow-back to ElderCare (Seam 3)
+### Phase D — Certificate flow-back to ElderCare (Seam 3) + entitlement flow-in
 **Gate:** an authenticated service channel between the two apps (falls out of Phase C).
+- **Entitlement flow-in (added 2026-07-18, replaces LMS billing):** the same
+  channel carries the agency's entitlement (active/lapsed + seat count) from
+  ElderCare into the LMS — via OIDC claims at JIT-provision time and/or an
+  ElderCare→LMS webhook upserting an `Entitlement` row. A small guard check
+  blocks org access when the ElderCare subscription lapses. Pricing/seat policy
+  is ElderCare (`psw`) product work, out of LMS scope.
 - **ElderCare side (`psw`):** inbound HMAC-signed webhook `POST /integrations/lms/certificate`
   → upsert `StaffCertification` (idempotent on certificate id; map per the Seam-3 table;
   `expiry_date` from cadence → feeds the existing credential-expiry scan). New router;
@@ -302,8 +330,9 @@ integration the first catalog to author is the **home-care track**, not the LTC 
 
 ### Phase E — Go-live hardening
 - **Secrets rotation** (LMS-M1 folds in once Clerk is gone — no Clerk keys left).
-- Stripe live keys + Stripe Tax (GST/HST); Mux prod; Resend prod; S3 ca-central-1
-  bucket + lifecycle/retention.
+- ~~Stripe live keys + Stripe Tax (GST/HST);~~ *(removed 2026-07-18 — no LMS
+  billing; access is an ElderCare entitlement)* Mux prod; Resend prod; S3
+  ca-central-1 bucket + lifecycle/retention.
 - Deploy pipeline for `apps/api` + `apps/web` to ca-central-1; DB backups + restore
   drill (mirror the ElderCare posture).
 - Bilingual QA (fr-CA), AODA/WCAG 2.1 AA pass (ON expansion).
@@ -331,11 +360,12 @@ refactor) + step 2 (`externalAuthId` rename). That leaves the LMS provider-swap-
 and the learning experience proven, without touching ElderCare's auth.
 
 **Key risks / decisions to surface to the owner up front:**
-1. **LTC vs home-care first — DECIDED: home-care first** (see §1.5 + Phase B0). Maple
-   Care fits home-care agencies *with a home-care content track* (setting-agnostic
-   engine; LTC-specific content/catalog). Since modules aren't authored yet, this fork
-   is cheap now. Gating non-code item: confirm the real home-care mandatory-training
-   list (different regulatory basis than the Nursing Homes Act) before authoring.
+1. **LTC vs home-care — DECIDED (updated 2026-07-18): home-care ONLY.** The LTC
+   track is dropped, not deferred (see the amendments block at top). Maple Care is a
+   home-care training product distributed through ElderCare, and access is an
+   ElderCare entitlement (Stripe removed). Gating non-code item unchanged: confirm
+   the real home-care mandatory-training list (different regulatory basis than the
+   Nursing Homes Act) before authoring.
 2. **The OIDC prerequisite is the real cost.** Everything downstream of identity gates
    on a security-sensitive ElderCare change. Budget it explicitly or keep the LMS on
    Clerk with a signed DPA as an *interim* (the audit's stated minimum) — but that
