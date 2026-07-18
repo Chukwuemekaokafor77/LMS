@@ -14,12 +14,12 @@ export class CurrentUserService {
 
   /**
    * Resolve (or provision on first sight) the local User for a verified
-   * identity subject. The DB column is still `clerkUserId` — it becomes
-   * `externalAuthId` in the LMS-M6 step-2 rename.
+   * identity subject (`User.externalAuthId` — today a Clerk user id, post-M6
+   * the ElderCare OIDC `sub`).
    */
   async upsertFromIdentity(externalId: string) {
     const existing = await this.prisma.user.findUnique({
-      where: { clerkUserId: externalId },
+      where: { externalAuthId: externalId },
     });
     if (existing) return existing;
 
@@ -29,11 +29,11 @@ export class CurrentUserService {
     return this.prisma.user.upsert({
       where: { email: profile.email },
       create: {
-        clerkUserId: externalId,
+        externalAuthId: externalId,
         email: profile.email,
         name: profile.name,
       },
-      update: { clerkUserId: externalId, name: profile.name ?? undefined },
+      update: { externalAuthId: externalId, name: profile.name ?? undefined },
     });
   }
 }

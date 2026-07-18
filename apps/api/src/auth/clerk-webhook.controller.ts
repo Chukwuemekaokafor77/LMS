@@ -77,8 +77,8 @@ export class ClerkWebhookController {
         [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || null;
 
       const user = await this.prisma.user.upsert({
-        where: { clerkUserId: u.id },
-        create: { clerkUserId: u.id, email: primary.email_address, name },
+        where: { externalAuthId: u.id },
+        create: { externalAuthId: u.id, email: primary.email_address, name },
         update: { email: primary.email_address, name: name ?? undefined },
       });
 
@@ -99,8 +99,8 @@ export class ClerkWebhookController {
       }
     } else if (event.type === "user.deleted") {
       await this.prisma.user.updateMany({
-        where: { clerkUserId: event.data.id },
-        data: { clerkUserId: null },
+        where: { externalAuthId: event.data.id },
+        data: { externalAuthId: null },
       });
     }
     return { ok: true };

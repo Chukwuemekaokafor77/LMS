@@ -27,7 +27,7 @@ describe("LMS-C2 onboarding", () => {
     await seedC2Base(db);
     // A user who is authenticated but not yet Staff anywhere.
     await db.user.create({
-      data: { clerkUserId: "clerk_onboarder", email: "onboarder@example.com", name: "Onboarder" },
+      data: { externalAuthId: "clerk_onboarder", email: "onboarder@example.com", name: "Onboarder" },
     });
   });
 
@@ -67,7 +67,7 @@ describe("LMS-C2 report export", () => {
 
   it("exports completions as CSV scoped to the actor's org", async () => {
     const res = await t
-      .as(fx.A.admin.clerkUserId)
+      .as(fx.A.admin.externalAuthId)
       .get("/reports/completions/csv")
       .expect(200);
     expect(res.headers["content-type"]).toContain("text/csv");
@@ -77,7 +77,7 @@ describe("LMS-C2 report export", () => {
 
   it("exports completions as PDF", async () => {
     const res = await t
-      .as(fx.A.admin.clerkUserId)
+      .as(fx.A.admin.externalAuthId)
       .get("/reports/completions/pdf")
       .expect(200);
     expect(res.headers["content-type"]).toContain("application/pdf");

@@ -16,8 +16,8 @@ import { drainQueues } from "./drain-queues";
 export type OrgFixture = {
   orgId: string;
   siteId: string;
-  admin: { userId: string; clerkUserId: string; staffId: string; email: string };
-  worker: { userId: string; clerkUserId: string; staffId: string; email: string };
+  admin: { userId: string; externalAuthId: string; staffId: string; email: string };
+  worker: { userId: string; externalAuthId: string; staffId: string; email: string };
   assignmentId: string;
   attemptId: string;
   certificateId: string;
@@ -79,7 +79,7 @@ async function seedOrg(
 
   const adminUser = await db.user.create({
     data: {
-      clerkUserId: `clerk_${tag}_admin`,
+      externalAuthId: `clerk_${tag}_admin`,
       email: `admin.${tag.toLowerCase()}@example.com`,
       name: `Admin ${tag}`,
     },
@@ -96,7 +96,7 @@ async function seedOrg(
 
   const workerUser = await db.user.create({
     data: {
-      clerkUserId: `clerk_${tag}_worker`,
+      externalAuthId: `clerk_${tag}_worker`,
       email: `worker.${tag.toLowerCase()}@example.com`,
       name: `Worker ${tag}`,
     },
@@ -150,13 +150,13 @@ async function seedOrg(
     siteId: site.id,
     admin: {
       userId: adminUser.id,
-      clerkUserId: adminUser.clerkUserId!,
+      externalAuthId: adminUser.externalAuthId!,
       staffId: adminStaff.id,
       email: adminUser.email,
     },
     worker: {
       userId: workerUser.id,
-      clerkUserId: workerUser.clerkUserId!,
+      externalAuthId: workerUser.externalAuthId!,
       staffId: workerStaff.id,
       email: workerUser.email,
     },

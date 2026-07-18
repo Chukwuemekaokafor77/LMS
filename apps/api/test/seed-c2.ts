@@ -65,7 +65,7 @@ export async function seedC2Base(db: PrismaClient): Promise<C2Base> {
     data: { orgId: org.id, name: "C2 Site" },
   });
   const user = await db.user.create({
-    data: { clerkUserId: "clerk_c2_worker", email: "c2.worker@example.com", name: "C2 Worker" },
+    data: { externalAuthId: "clerk_c2_worker", email: "c2.worker@example.com", name: "C2 Worker" },
   });
   const worker = await db.staff.create({
     data: {

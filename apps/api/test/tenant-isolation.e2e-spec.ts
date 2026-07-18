@@ -20,10 +20,10 @@ let fx: Fixtures;
 let rawDb: PrismaClient;
 
 const tok = {
-  aAdmin: () => fx.A.admin.clerkUserId,
-  aWorker: () => fx.A.worker.clerkUserId,
-  bAdmin: () => fx.B.admin.clerkUserId,
-  bWorker: () => fx.B.worker.clerkUserId,
+  aAdmin: () => fx.A.admin.externalAuthId,
+  aWorker: () => fx.A.worker.externalAuthId,
+  bAdmin: () => fx.B.admin.externalAuthId,
+  bWorker: () => fx.B.worker.externalAuthId,
 };
 
 beforeAll(async () => {

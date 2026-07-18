@@ -67,7 +67,9 @@ enum SubscriptionStatus {
 
 model User {
   id                String     @id @default(cuid())
-  clerkUserId       String?    @unique
+  /// Provider-agnostic auth subject (today: the Clerk user id; post-LMS-M6:
+  /// the ElderCare OIDC `sub`). Renamed from clerkUserId in the M6 step-2 prep.
+  externalAuthId    String?    @unique
   email             String     @unique
   name              String?
   preferredLocale   String     @default("en-CA")  // "en-CA" | "fr-CA"

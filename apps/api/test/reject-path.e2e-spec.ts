@@ -19,7 +19,7 @@ beforeAll(async () => {
   await seedC2Base(db); // gives an authed STAFF worker (clerk_c2_worker)
   // A user who is authenticated but not yet Staff — reaches the onboarding pipe.
   await db.user.create({
-    data: { clerkUserId: "clerk_rejecter", email: "rejecter@example.com" },
+    data: { externalAuthId: "clerk_rejecter", email: "rejecter@example.com" },
   });
 }, 60_000);
 

@@ -13,7 +13,7 @@ import { tenantScopeMiddleware } from "../src/tenant/tenant-scope.middleware";
  * Redis, the real tenant-scope middleware + Clerk guard + Prisma guardrail. Only
  * the three services that do real network/crypto I/O are stubbed:
  *
- *   - ClerkService — auth bypass: the bearer token *is* the clerkUserId, so the
+ *   - ClerkService — auth bypass: the bearer token *is* the externalAuthId, so the
  *     real guard resolves the seeded Staff and sets the org context. This is
  *     what exercises the H1 request→context→guardrail chain end-to-end.
  *   - S3Service / MuxService — return canned values so cert-download and video
@@ -86,8 +86,8 @@ type AuthedRequests = {
 
 export type TestApp = {
   app: INestApplication;
-  /** Request builders authenticated as the staff with this clerkUserId. */
-  as: (clerkUserId: string) => AuthedRequests;
+  /** Request builders authenticated as the staff with this externalAuthId. */
+  as: (externalAuthId: string) => AuthedRequests;
   /** Request builders with no auth header. */
   anon: () => AuthedRequests;
 };
@@ -137,7 +137,7 @@ export async function setupTestApp(opts: SetupOptions = {}): Promise<TestApp> {
 
   return {
     app,
-    as: (clerkUserId: string) => withAuth(`Bearer ${clerkUserId}`),
+    as: (externalAuthId: string) => withAuth(`Bearer ${externalAuthId}`),
     anon: () => withAuth(),
   };
 }

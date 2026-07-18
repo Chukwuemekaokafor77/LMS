@@ -27,7 +27,7 @@ afterAll(async () => {
 describe("GET /assignments/:id — no answer key in the learner payload", () => {
   it("returns questions without correctIdx or explanations, but with the fields the quiz UI needs", async () => {
     const res = await t
-      .as(fx.A.worker.clerkUserId)
+      .as(fx.A.worker.externalAuthId)
       .get(`/assignments/${fx.A.assignmentId}`)
       .expect(200);
 
@@ -51,7 +51,7 @@ describe("GET /assignments/:id — no answer key in the learner payload", () => 
     // with the correct answer and expect a real score. The module's READY
     // lesson must be completed first or the quiz gate rejects the submit.
     await t
-      .as(fx.A.worker.clerkUserId)
+      .as(fx.A.worker.externalAuthId)
       .post(`/lessons/${fx.lessonId}/complete`)
       .expect(201);
     const quiz = await rawDb.quiz.findUnique({
@@ -59,7 +59,7 @@ describe("GET /assignments/:id — no answer key in the learner payload", () => 
     });
     const q = await rawDb.question.findFirst({ where: { quizId: quiz!.id } });
     const res = await t
-      .as(fx.A.worker.clerkUserId)
+      .as(fx.A.worker.externalAuthId)
       .post(`/assignments/attempts/${fx.A.attemptId}/submit`)
       .send({
         responses: [{ questionId: q!.id, selectedIdx: q!.correctIdx as number[] }],
