@@ -66,9 +66,11 @@ Legend: `[x]` driven and working · `[~]` verified to the provider boundary
 
 ## Open items (not bugs)
 
-- **Attempt limits — product decision needed.** Nothing in the schema or
-  services caps quiz retries; the completion plan mentions "attempt limits" as
-  a to-verify. Decide: unlimited (current), N-per-assignment, or cooldown.
+- **Attempt limits — DECIDED 2026-07-17: capped at 5 per assignment**
+  (owner call; implemented in `feat/attempt-cap-5`). An attempt is consumed on
+  start; a started attempt may still be submitted; a cadence renewal gets a
+  fresh 5. Enforced server-side in `startAttempt`; the quiz UI shows
+  "Attempts used: n of 5" and disables start/retry when exhausted.
 - Seeded lessons have no videos (content is Phase B); the quiz gate only
   counts READY-video lessons, so seed modules remain take-able.
 - One transient web→API `ECONNREFUSED` in dev (single occurrence, fine on

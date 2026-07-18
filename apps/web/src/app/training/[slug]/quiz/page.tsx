@@ -25,6 +25,8 @@ type Assignment = {
     } | null;
   };
   certificate: { id: string } | null;
+  attempts: { id: string }[];
+  maxAttempts: number;
 };
 
 async function getAssignment(id: string): Promise<Assignment | null> {
@@ -63,6 +65,8 @@ export default async function QuizPage({
         questions={a.module.quiz.questions}
         completed={a.status === "COMPLETED"}
         certificateId={a.certificate?.id ?? null}
+        attemptsUsed={a.attempts.length}
+        maxAttempts={a.maxAttempts}
       />
     </main>
   );

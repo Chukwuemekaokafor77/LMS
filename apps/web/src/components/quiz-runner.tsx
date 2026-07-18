@@ -23,6 +23,8 @@ export function QuizRunner({
   questions,
   completed,
   certificateId,
+  attemptsUsed,
+  maxAttempts,
 }: {
   assignmentId: string;
   locale: string;
@@ -32,11 +34,14 @@ export function QuizRunner({
   questions: Q[];
   completed: boolean;
   certificateId: string | null;
+  attemptsUsed: number;
+  maxAttempts: number;
 }) {
   const { getToken } = useAuth();
   const fr = locale === "fr-CA";
   const title = fr ? moduleTitleFr : moduleTitleEn;
 
+  const [used, setUsed] = useState(attemptsUsed);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, number[]>>({});
   const [attestChecked, setAttestChecked] = useState(false);
@@ -67,6 +72,7 @@ export function QuizRunner({
       });
       if (!res.ok) throw new Error(`Failed (${res.status})`);
       const a = (await res.json()) as { id: string };
+      setUsed((u) => u + 1);
       setAttemptId(a.id);
     } catch (e) {
       setError((e as Error).message);
@@ -143,22 +149,34 @@ export function QuizRunner({
     );
   }
 
+  const exhausted = used >= maxAttempts;
+  const attemptsLine = fr
+    ? `Essais utilisés : ${used} sur ${maxAttempts}.`
+    : `Attempts used: ${used} of ${maxAttempts}.`;
+  const exhaustedMsg = fr
+    ? "Vous avez utilisé tous vos essais. Communiquez avec votre administrateur pour une nouvelle attribution."
+    : "You've used all your attempts. Contact your administrator for a new assignment.";
+
   if (!attemptId) {
     return (
       <div>
         <h1 className="text-3xl font-bold">{title}</h1>
         <p className="mt-2 text-muted-foreground">
           {fr
-            ? `Note de passage : ${passMark}%. Vous pouvez réessayer si nécessaire.`
-            : `Pass mark: ${passMark}%. You may retry if needed.`}
+            ? `Note de passage : ${passMark}%. ${attemptsLine}`
+            : `Pass mark: ${passMark}%. ${attemptsLine}`}
         </p>
-        <button
-          onClick={start}
-          disabled={busy}
-          className="mt-6 rounded bg-primary px-5 py-3 font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {busy ? "…" : fr ? "Démarrer" : "Start"}
-        </button>
+        {exhausted ? (
+          <p className="mt-6 text-sm text-red-600">{exhaustedMsg}</p>
+        ) : (
+          <button
+            onClick={start}
+            disabled={busy}
+            className="mt-6 rounded bg-primary px-5 py-3 font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {busy ? "…" : fr ? "Démarrer" : "Start"}
+          </button>
+        )}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </div>
     );
@@ -184,6 +202,8 @@ export function QuizRunner({
               ? "Votre attestation est en cours de génération. Elle sera disponible dans votre tableau de bord d'ici quelques instants."
               : "Your certificate is being generated. It will be available in your dashboard within a moment."}
           </p>
+        ) : exhausted ? (
+          <p className="mt-6 text-sm text-red-600">{exhaustedMsg}</p>
         ) : (
           <button
             onClick={() => {
@@ -194,7 +214,7 @@ export function QuizRunner({
             }}
             className="mt-6 rounded border px-5 py-3 font-medium"
           >
-            {fr ? "Réessayer" : "Try again"}
+            {fr ? "Réessayer" : "Try again"} ({attemptsLine})
           </button>
         )}
       </div>
