@@ -11,8 +11,6 @@ import type { Request } from "express";
 import { Webhook } from "svix";
 import { PrismaService } from "../prisma/prisma.service";
 import { Public } from "./public.decorator";
-import { InvitationsService } from "../staff/invitations.service";
-import type { OrgPermission } from "@prisma/client";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
 
 type ClerkUser = {
@@ -21,13 +19,6 @@ type ClerkUser = {
   primary_email_address_id: string | null;
   first_name: string | null;
   last_name: string | null;
-  public_metadata?: {
-    orgId?: string;
-    siteId?: string | null;
-    roleCode?: string;
-    orgPermission?: OrgPermission;
-    employmentType?: string | null;
-  };
 };
 
 type ClerkEvent =
@@ -39,7 +30,6 @@ export class ClerkWebhookController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly invitations: InvitationsService,
   ) {}
 
   @Public()
@@ -76,27 +66,14 @@ export class ClerkWebhookController {
       const name =
         [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || null;
 
-      const user = await this.prisma.user.upsert({
+      // Identity sync only. Staff materialization moved to the LMS-native
+      // invitation accept flow (LMS-M6 step 3) — the webhook no longer reads
+      // publicMetadata.
+      await this.prisma.user.upsert({
         where: { externalAuthId: u.id },
         create: { externalAuthId: u.id, email: primary.email_address, name },
         update: { email: primary.email_address, name: name ?? undefined },
       });
-
-      // Materialize Staff if the user came in through an invitation.
-      if (
-        event.type === "user.created" &&
-        u.public_metadata?.orgId &&
-        u.public_metadata.roleCode
-      ) {
-        await this.invitations.materializeFromInvitation({
-          userId: user.id,
-          orgId: u.public_metadata.orgId,
-          siteId: u.public_metadata.siteId ?? null,
-          roleCode: u.public_metadata.roleCode,
-          orgPermission: u.public_metadata.orgPermission ?? "STAFF",
-          employmentType: u.public_metadata.employmentType ?? null,
-        });
-      }
     } else if (event.type === "user.deleted") {
       await this.prisma.user.updateMany({
         where: { externalAuthId: event.data.id },

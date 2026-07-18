@@ -41,9 +41,11 @@ Legend: `[x]` driven and working · `[~]` verified to the provider boundary
 
 - [x] `/admin` overview, `/admin/staff` (list shows real staff), layout gates
       `STAFF` permission out; API enforces org scoping regardless (LMS-C1)
-- [x] Staff invite → real Clerk invitation created (`pending`)
-- [~] Invite acceptance → staff materialization — needs the Clerk webhook
-      (tunnel) locally; handler is signature-verified + e2e-covered (LMS-C2)
+- [x] Staff invite → **LMS-native invitation** (token emailed, SHA-256 stored;
+      replaced Clerk invitations in LMS-M6 step 3) + pending list + revoke
+- [x] Invite acceptance → staff materialization — now fully driveable locally:
+      signed-in invitee posts the token; email-bound, single-use, expiring
+      (e2e: `invitations.e2e-spec.ts`; no webhook/tunnel needed anymore)
 - [x] Roster CSV: presigned upload → commit → processed rows + per-row errors
       (`row 4: invalid email`) recorded on the import
 - [x] Reports: JSON + CSV (inspector columns incl. attestation hash and
@@ -75,3 +77,7 @@ Legend: `[x]` driven and working · `[~]` verified to the provider boundary
   counts READY-video lessons, so seed modules remain take-able.
 - One transient web→API `ECONNREFUSED` in dev (single occurrence, fine on
   retry, both listeners dual-stack — not reproduced).
+- **Running the vitest suite locally wipes the dev database** — the test seeds
+  use the same `DATABASE_URL` as `pnpm dev` and delete every table first.
+  Re-run `pnpm --filter @maple-care/api run seed` (+ re-onboard) afterwards,
+  or point tests at a separate DB if this bites too often.

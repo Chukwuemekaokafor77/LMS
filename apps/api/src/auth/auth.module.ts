@@ -4,13 +4,11 @@ import { ClerkService } from "./clerk.service";
 import { ClerkAuthGuard } from "./clerk-auth.guard";
 import { CurrentUserService } from "./current-user.service";
 import { ClerkWebhookController } from "./clerk-webhook.controller";
-import { StaffModule } from "../staff/staff.module";
 import { IDENTITY_PROVIDER } from "./identity-provider";
 import { ClerkIdentityProvider } from "./clerk-identity-provider";
 
 @Global()
 @Module({
-  imports: [StaffModule],
   controllers: [ClerkWebhookController],
   providers: [
     ClerkService,

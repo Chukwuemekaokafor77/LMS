@@ -8,8 +8,8 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+import { createHash, randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import { ClerkService } from "../auth/clerk.service";
 import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
 import type { OrgPermission } from "@prisma/client";
@@ -24,26 +24,38 @@ export type InviteInput = {
   employmentType?: string;
 };
 
+/** Invitations expire after 30 days (matches the old Clerk default). */
+export const INVITATION_TTL_DAYS = 30;
+
+const hashToken = (raw: string) =>
+  createHash("sha256").update(raw).digest("hex");
+
+/**
+ * LMS-native staff invitations (LMS-M6 step 3). Replaces Clerk's
+ * invitation + webhook-publicMetadata mechanism:
+ *
+ *   invite  → Invitation row (SHA-256 of a one-time token; raw token only in
+ *             the emailed accept link) + bilingual email job
+ *   accept  → the signed-in invitee posts the token; email must match; the
+ *             Staff row is materialized and required training enqueued
+ *   revoke  → tombstoned in place (revokedAt), org-scoped
+ */
 @Injectable()
 export class InvitationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly clerk: ClerkService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
     @InjectQueue(QUEUES.materialize) private readonly materializeQ: Queue,
+    @InjectQueue(QUEUES.email) private readonly emailQ: Queue,
   ) {}
 
-  /**
-   * Invite a single staff member: validates inputs against the caller's org,
-   * issues a Clerk magic-link invitation, and pre-creates a pending Staff
-   * stub when the invitee accepts (via the Clerk webhook user.created
-   * handler — see [auth/clerk-webhook.controller.ts]).
-   */
   async invite(actor: StaffContext, input: InviteInput) {
     if (actor.orgPermission === "STAFF") {
       throw new ForbiddenException("Site or org admin required");
     }
+
+    const email = input.email.toLowerCase();
 
     const role = await this.prisma.role.findUnique({
       where: { code: input.roleCode },
@@ -71,7 +83,7 @@ export class InvitationsService {
     }
 
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: input.email.toLowerCase() },
+      where: { email },
     });
     if (existingUser) {
       // Deliberately cross-org: v1 is one-org-per-user, so we must check
@@ -89,21 +101,40 @@ export class InvitationsService {
       }
     }
 
-    const webBase = this.config.getOrThrow<string>("WEB_BASE_URL");
-    const invitation = await this.clerk
-      .getClient()
-      .invitations.createInvitation({
-        emailAddress: input.email.toLowerCase(),
-        redirectUrl: `${webBase}/onboarding/accept-invite`,
-        publicMetadata: {
-          orgId: actor.orgId,
-          siteId: input.siteId ?? null,
-          roleCode: input.roleCode,
-          orgPermission: input.orgPermission ?? "STAFF",
-          employmentType: input.employmentType ?? null,
-        },
-        notify: true,
-      });
+    // A re-invite supersedes any still-pending invitation for the same email
+    // in THIS org (their emailed links stop working; only the newest token is
+    // live). orgId is explicit because the roster processor calls invite()
+    // from a system context, where the guardrail injects nothing.
+    await this.prisma.invitation.updateMany({
+      where: {
+        orgId: actor.orgId,
+        email,
+        acceptedAt: null,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    const rawToken = randomBytes(32).toString("base64url");
+    const invitation = await this.prisma.invitation.create({
+      data: {
+        orgId: actor.orgId,
+        siteId: input.siteId ?? null,
+        email,
+        roleCode: input.roleCode,
+        orgPermission: input.orgPermission ?? "STAFF",
+        employmentType: input.employmentType ?? null,
+        tokenHash: hashToken(rawToken),
+        invitedById: actor.userId,
+        expiresAt: new Date(Date.now() + INVITATION_TTL_DAYS * 86_400_000),
+      },
+    });
+
+    // The raw token travels only through the email job → accept link.
+    await this.emailQ.add("staff.invited", {
+      invitationId: invitation.id,
+      token: rawToken,
+    });
 
     await this.audit.record({
       actorId: actor.userId,
@@ -112,22 +143,55 @@ export class InvitationsService {
       entityType: "Invitation",
       entityId: invitation.id,
       payload: {
-        email: input.email,
+        email,
         roleCode: input.roleCode,
         siteId: input.siteId,
       },
     });
 
-    return { id: invitation.id, status: invitation.status };
+    return { id: invitation.id, status: "pending" as const };
+  }
+
+  /** Pending (live) invitations for the actor's org — admin surface. */
+  async listPending(actor: StaffContext) {
+    if (actor.orgPermission === "STAFF") {
+      throw new ForbiddenException("Site or org admin required");
+    }
+    return this.prisma.invitation.findMany({
+      where: {
+        acceptedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        email: true,
+        roleCode: true,
+        siteId: true,
+        orgPermission: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async revoke(actor: StaffContext, invitationId: string) {
     if (actor.orgPermission === "STAFF") {
       throw new ForbiddenException("Site or org admin required");
     }
-    const inv = await this.clerk
-      .getClient()
-      .invitations.revokeInvitation(invitationId);
+    // Org-scoped read via the guardrail — another org's invitation is a 404.
+    const inv = await this.prisma.invitation.findFirst({
+      where: { id: invitationId },
+    });
+    if (!inv) throw new NotFoundException("Invitation not found");
+    if (inv.acceptedAt) {
+      throw new BadRequestException("Invitation already accepted");
+    }
+    await this.prisma.invitation.update({
+      where: { id: invitationId },
+      data: { revokedAt: new Date() },
+    });
     await this.audit.record({
       actorId: actor.userId,
       orgId: actor.orgId,
@@ -135,13 +199,72 @@ export class InvitationsService {
       entityType: "Invitation",
       entityId: invitationId,
     });
-    return { id: inv.id, status: inv.status };
+    return { id: invitationId, status: "revoked" as const };
   }
 
   /**
-   * Called from the Clerk webhook user.created handler when an invited user
-   * accepts. Reads the invitation's publicMetadata and creates the Staff row.
+   * Accept an invitation as the signed-in user. The caller has no org context
+   * yet (they aren't Staff anywhere), so the token lookup runs as system; the
+   * invitation's own orgId then scopes the materialization.
    */
+  async accept(user: { id: string; email: string }, rawToken: string) {
+    const tokenHash = hashToken(rawToken);
+    const inv = await runAsSystem(
+      async () =>
+        await this.prisma.invitation.findUnique({ where: { tokenHash } }),
+    );
+    if (!inv || inv.revokedAt) {
+      throw new NotFoundException("Invitation not found");
+    }
+    if (inv.acceptedAt) {
+      throw new BadRequestException("Invitation already accepted");
+    }
+    if (inv.expiresAt < new Date()) {
+      throw new BadRequestException("Invitation expired");
+    }
+    if (inv.email !== user.email.toLowerCase()) {
+      // The invite is bound to the email it was sent to.
+      throw new ForbiddenException(
+        "This invitation was issued to a different email address",
+      );
+    }
+
+    const existingStaff = await runAsSystem(
+      async () =>
+        await this.prisma.staff.findUnique({ where: { userId: user.id } }),
+    );
+    if (existingStaff) {
+      throw new ConflictException("You already belong to an organization");
+    }
+
+    const staff = await this.materializeFromInvitation({
+      userId: user.id,
+      orgId: inv.orgId,
+      siteId: inv.siteId,
+      roleCode: inv.roleCode,
+      orgPermission: inv.orgPermission,
+      employmentType: inv.employmentType,
+    });
+
+    await runWithOrgContext(inv.orgId, async () => {
+      await this.prisma.invitation.update({
+        where: { tokenHash },
+        data: { acceptedAt: new Date() },
+      });
+    });
+
+    await this.audit.record({
+      actorId: user.id,
+      orgId: inv.orgId,
+      action: "staff.invitation_accepted",
+      entityType: "Invitation",
+      entityId: inv.id,
+    });
+
+    return staff;
+  }
+
+  /** Create the Staff row an invitation describes + enqueue required training. */
   async materializeFromInvitation(args: {
     userId: string;
     orgId: string;
@@ -155,8 +278,6 @@ export class InvitationsService {
     });
     if (!role) throw new NotFoundException(`Role ${args.roleCode} not found`);
 
-    // Runs from the Clerk webhook (no HTTP auth → no org context), but the
-    // invitation metadata tells us exactly which org the new Staff belongs to.
     const staff = await runWithOrgContext(
       args.orgId,
       async () =>
