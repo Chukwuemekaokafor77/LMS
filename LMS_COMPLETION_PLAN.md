@@ -26,6 +26,12 @@ and the `psw` ElderCare repo). Paths are relative to each repo's root.
 >    ElderCare-fed **entitlement** (OIDC claims or webhook → seats/status),
 >    which lands with Phases C–D. Phase E loses the whole Stripe/Tax workload,
 >    and LMS-M1's rotation scope shrinks by one provider.
+> 3. **(2026-07-19) The LMS is renamed ElderCare Academy**, hosted at
+>    `academy.<eldercare-domain>`, entered exclusively via a seamless
+>    one-time-token handoff from inside ElderCare (no Academy login screen).
+>    This supersedes the full-OIDC-provider shape of Seam 1 — see
+>    [docs/ELDERCARE_ACADEMY_SSO_PLAN.md](docs/ELDERCARE_ACADEMY_SSO_PLAN.md).
+>    "Maple Care" branding is retired when A6 (rename) lands.
 
 ---
 
@@ -108,6 +114,13 @@ This is LMS-M6 + a new ElderCare capability. ElderCare has **no OIDC-provider su
 today** (its `SSOConfiguration` is the *consumer* side — enterprise orgs logging *into*
 ElderCare via their own IdP; the opposite direction). So this seam has a hard
 prerequisite in the `psw` repo: make ElderCare mint verifiable OIDC/JWKS tokens.
+**Detailed implementation plan + sizing (2026-07-19, v2 — owner-revised):**
+[docs/ELDERCARE_ACADEMY_SSO_PLAN.md](docs/ELDERCARE_ACADEMY_SSO_PLAN.md) —
+the full-OIDC design was superseded the same day: the LMS becomes **ElderCare
+Academy** on `academy.<eldercare-domain>` with a **one-time-token handoff SSO**
+(seamless "Training" button from inside ElderCare; no Academy login screen).
+~1.5–2 weeks end-to-end (ElderCare ~2–3d, Academy ~3–4d, rename ~1d, cutover
+~1d). OIDC remains on the shelf for any future third-party clients.
 - **Security-sensitive:** this modifies the just-audited, RLS-hardened ElderCare auth
   core → own review required.
 - **De-risking:** build the LMS side against a provider-agnostic `IdentityProvider`
