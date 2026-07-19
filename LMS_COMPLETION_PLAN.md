@@ -264,6 +264,15 @@ certificate — driven end-to-end, not just typechecking.
 **Goal:** a real modular competency library (see B0 findings below), bilingual
 EN/FR (NB's official-languages reality + fr-CA agencies; not a claim of
 provincial mandate).
+
+**Authoring tooling: ✅ built 2026-07-19.** Org admins author modules/lessons/
+quizzes and upload videos in **Admin → Modules** (PRs #24/#25). The **shared
+library** is authored the same way in Maple Care's own HQ org, then promoted:
+`pnpm --filter @maple-care/api run library:promote -- <slug> [--jurisdiction X]`
+flips it to `orgId = null` (demote back with `--demote-to <orgId>` to edit).
+Module ids survive the round-trip, so assignments keep working. What remains in
+Phase B is the *content itself* (SME writing or licensing) + role rows/policy
+sets per province.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
