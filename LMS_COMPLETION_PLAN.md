@@ -108,6 +108,10 @@ This is LMS-M6 + a new ElderCare capability. ElderCare has **no OIDC-provider su
 today** (its `SSOConfiguration` is the *consumer* side — enterprise orgs logging *into*
 ElderCare via their own IdP; the opposite direction). So this seam has a hard
 prerequisite in the `psw` repo: make ElderCare mint verifiable OIDC/JWKS tokens.
+**Detailed implementation plan + sizing (2026-07-19):**
+[docs/ELDERCARE_OIDC_PROVIDER_PLAN.md](docs/ELDERCARE_OIDC_PROVIDER_PLAN.md) —
+~2.5–3.5 weeks end-to-end (provider ~6–9d, LMS swap ~4–6d, cutover ~1d), single
+first-party client scope, minimal hand-rolled code-flow+PKCE on python-jose.
 - **Security-sensitive:** this modifies the just-audited, RLS-hardened ElderCare auth
   core → own review required.
 - **De-risking:** build the LMS side against a provider-agnostic `IdentityProvider`
