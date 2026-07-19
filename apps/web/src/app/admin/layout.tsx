@@ -18,6 +18,7 @@ export default async function AdminLayout({
         <h2 className="mb-3 font-semibold">Admin</h2>
         <NavItem href="/admin">Overview</NavItem>
         <NavItem href="/admin/staff">Staff</NavItem>
+        <NavItem href="/admin/modules">Modules</NavItem>
         <NavItem href="/admin/required-trainings">Required training</NavItem>
         <NavItem href="/admin/reports">Reports</NavItem>
         <NavItem href="/admin/roster">Roster import</NavItem>
