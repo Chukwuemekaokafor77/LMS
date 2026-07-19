@@ -5,7 +5,7 @@ import { Leaf } from "lucide-react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Maple Care — Compliance training for Atlantic-Canada LTC",
+  title: "ElderCare Academy — Training for Atlantic-Canada home-care teams",
   description:
     "Inspector-ready compliance training for long-term-care operators in New Brunswick, Nova Scotia, PEI, and Newfoundland. Bilingual (EN/FR), PHIPAA-aware, hosted in ca-central-1.",
 };
@@ -28,7 +28,7 @@ export default function RootLayout({
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-white shadow-sm">
                   <Leaf className="h-[18px] w-[18px]" />
                 </span>
-                <span className="text-lg">Maple Care</span>
+                <span className="text-lg">ElderCare Academy</span>
               </Link>
               <div className="flex items-center gap-1 text-sm sm:gap-2">
                 <SignedIn>
@@ -66,7 +66,7 @@ export default function RootLayout({
                 <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-gradient text-white">
                   <Leaf className="h-3.5 w-3.5" />
                 </span>
-                <span className="font-medium text-foreground">Maple Care</span>
+                <span className="font-medium text-foreground">ElderCare Academy</span>
                 <span className="hidden sm:inline">
                   — Compliance training for Atlantic-Canada LTC
                 </span>

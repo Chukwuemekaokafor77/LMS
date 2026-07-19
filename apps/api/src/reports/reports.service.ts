@@ -120,7 +120,7 @@ export class ReportsService {
       doc.on("data", (c) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
 
-      doc.fontSize(16).text("Maple Care — Compliance Training Report");
+      doc.fontSize(16).text("ElderCare Academy — Compliance Training Report");
       doc
         .fontSize(9)
         .fillColor("#666")

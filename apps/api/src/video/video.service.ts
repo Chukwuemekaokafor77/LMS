@@ -21,7 +21,7 @@ export class VideoService {
     if (!lesson) throw new NotFoundException("Lesson not found");
 
     // Only an ORG_ADMIN of the module's owning org may upload.
-    // Global library modules (orgId null) are uploaded by Maple Care staff
+    // Global library modules (orgId null) are uploaded by platform (Academy) staff
     // via a separate internal tool — not exposed here.
     if (lesson.module.orgId === null) {
       throw new ForbiddenException("Library module — not org-uploadable");

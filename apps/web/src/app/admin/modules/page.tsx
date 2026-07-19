@@ -41,7 +41,7 @@ export default async function ModulesPage() {
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
         Your organization&apos;s own training modules. Drafts are invisible to
-        staff until published. Library modules are managed by Maple Care.
+        staff until published. Library modules are managed by ElderCare Academy.
       </p>
 
       {modules.length === 0 ? (
