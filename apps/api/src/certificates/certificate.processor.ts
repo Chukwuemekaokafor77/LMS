@@ -179,8 +179,8 @@ export class CertificateProcessor extends WorkerHost {
       doc
         .text(
           fr
-            ? `Émis par Maple Care · Compétence : ${args.jurisdiction}`
-            : `Issued by Maple Care · Jurisdiction: ${args.jurisdiction}`,
+            ? `Émis par ElderCare Academy · Compétence : ${args.jurisdiction}`
+            : `Issued by ElderCare Academy · Jurisdiction: ${args.jurisdiction}`,
           { align: "center" },
         );
 

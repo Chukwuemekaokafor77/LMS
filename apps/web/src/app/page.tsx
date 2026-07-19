@@ -29,11 +29,11 @@ export default function HomePage() {
 
             <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Inspector-ready compliance training for{" "}
-              <span className="text-brand-gradient">Atlantic long-term care</span>.
+              <span className="text-brand-gradient">Atlantic home care</span>.
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
-              IPAC, fire safety, abuse prevention, PHIPAA, falls, dementia care —
+              IPAC, lone-worker safety, abuse prevention, privacy, falls, dementia care —
               mandatory training delivered, tracked, and exported in the format
               your inspector expects. Bilingual EN/FR, hosted in ca-central-1.
             </p>
@@ -70,7 +70,7 @@ export default function HomePage() {
             Everything an inspection asks for
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Built for the realities of Atlantic-Canada long-term care — not a
+            Built for the realities of Atlantic-Canada home care — not a
             generic LMS bolted onto healthcare.
           </p>
         </div>
@@ -84,12 +84,12 @@ export default function HomePage() {
           <Feature
             icon={Languages}
             title="Bilingual from day 1"
-            body="Every module in English and French — required by NB's Official Languages Act and respected by francophone staff and residents."
+            body="Every module in English and French — required by NB's Official Languages Act and respected by francophone staff and clients."
           />
           <Feature
             icon={ShieldCheck}
             title="PHIPAA-grade audit"
-            body="Every record access logged, append-only audit ledger, retention scheduler. Resident and staff PHI never leaves Canada."
+            body="Every record access logged, append-only audit ledger, retention scheduler. Client and staff PHI never leaves Canada."
           />
           <Feature
             icon={Upload}
@@ -98,8 +98,8 @@ export default function HomePage() {
           />
           <Feature
             icon={Layers}
-            title="Eight ready modules"
-            body="IPAC, Fire Safety, WHMIS 2015, Resident Rights, Abuse & Reporting, Privacy (PHIPAA), Falls Prevention, Responsive Behaviours / Dementia."
+            title="A ready competency library"
+            body="Home-support fundamentals, IPAC, WHMIS, Client Rights, Abuse & Reporting, Privacy, Falls Prevention, Lone-Worker Safety, Dementia Care."
           />
           <Feature
             icon={Users}
@@ -120,7 +120,7 @@ export default function HomePage() {
             Ready to be inspection-ready?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Book a pilot for your home and we&apos;ll have your staff training and
+            Book a pilot for your agency and we&apos;ll have your staff training and
             audit trail live in days — bilingual, in-Canada, inspector-formatted.
           </p>
           <div className="mt-7 flex justify-center">

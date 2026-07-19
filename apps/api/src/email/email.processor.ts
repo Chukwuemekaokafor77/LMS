@@ -124,8 +124,8 @@ export class EmailProcessor extends WorkerHost {
         to: inv.email,
         subject:
           locale === "fr-CA"
-            ? `Invitation à rejoindre ${inv.org.name} sur Maple Care`
-            : `You're invited to join ${inv.org.name} on Maple Care`,
+            ? `Invitation à rejoindre ${inv.org.name} sur ElderCare Academy`
+            : `You're invited to join ${inv.org.name} on ElderCare Academy`,
         html: invitationEmailHtml(inv, token, locale),
       });
       return;
@@ -154,7 +154,7 @@ function invitationEmailHtml(
   if (locale === "fr-CA") {
     return `
       <h1>Bonjour</h1>
-      <p><strong>${esc(inv.org.name)}</strong> vous invite à rejoindre Maple Care
+      <p><strong>${esc(inv.org.name)}</strong> vous invite à rejoindre ElderCare Academy
       en tant que <strong>${esc(inv.role.labelFr)}</strong> pour compléter vos
       formations obligatoires.</p>
       <p><a href="${link}">Accepter l'invitation</a></p>
@@ -163,7 +163,7 @@ function invitationEmailHtml(
   }
   return `
     <h1>Hello</h1>
-    <p><strong>${esc(inv.org.name)}</strong> has invited you to join Maple Care
+    <p><strong>${esc(inv.org.name)}</strong> has invited you to join ElderCare Academy
     as <strong>${esc(inv.role.labelEn)}</strong> to complete your mandatory
     training.</p>
     <p><a href="${link}">Accept the invitation</a></p>

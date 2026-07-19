@@ -49,7 +49,7 @@ export class ReportsController {
       .header("Content-Type", "text/csv; charset=utf-8")
       .header(
         "Content-Disposition",
-        `attachment; filename="maple-care-completions-${stamp}.csv"`,
+        `attachment; filename="academy-completions-${stamp}.csv"`,
       )
       .send(csv);
   }
@@ -68,7 +68,7 @@ export class ReportsController {
       .header("Content-Type", "application/pdf")
       .header(
         "Content-Disposition",
-        `attachment; filename="maple-care-completions-${stamp}.pdf"`,
+        `attachment; filename="academy-completions-${stamp}.pdf"`,
       )
       .send(pdf);
   }

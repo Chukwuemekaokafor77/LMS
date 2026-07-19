@@ -20,7 +20,7 @@ import type {
 
 /**
  * Org-admin authoring for **org-private** modules (Module.orgId = actor's org).
- * The global library (orgId null) is Maple-Care-authored and not editable here.
+ * The global library (orgId null) is Academy-authored (platform-side) and not editable here.
  *
  * Module/Lesson/Quiz are content — not PHI models — so the tenant guardrail
  * does not inject orgId; every method scopes ownership explicitly (the same

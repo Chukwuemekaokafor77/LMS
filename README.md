@@ -1,4 +1,4 @@
-# Maple Care
+# ElderCare Academy
 
 Compliance training for Atlantic-Canada **home-care agencies**, delivered as a
 feature of ElderCare Companion (separate `psw` repo).
@@ -12,7 +12,7 @@ Launch jurisdiction: **New Brunswick** (statutory bilingual delivery + PHIPAA).
 
 ## What it is
 
-A multi-tenant training engine for the agencies ElderCare serves. It solves two
+A multi-tenant training engine for the agencies ElderCare serves (branded in-product as **ElderCare Academy**). It solves two
 recurring pains for an agency's Director of Care:
 
 1. **Onboarding new caregivers fast.** Roster CSV → assignments → completions.
@@ -108,4 +108,4 @@ and go-live hardening (Phase E). `LMS_PRE_LAUNCH_AUDIT.md` tracks safety state.
 
 ## Why this stack vs. the original list
 
-Dropped GraphQL (one client), Elasticsearch (Postgres FTS later), Kubernetes (Fly.io / Render for the first year), FastAPI sidecar (no AI features yet), and the consumer-marketplace surface (public catalog, per-course checkout). Billing was dropped entirely in 2026-07 — Maple Care is an ElderCare-entitled feature, so ElderCare's subscription is the only bill an agency sees.
+Dropped GraphQL (one client), Elasticsearch (Postgres FTS later), Kubernetes (Fly.io / Render for the first year), FastAPI sidecar (no AI features yet), and the consumer-marketplace surface (public catalog, per-course checkout). Billing was dropped entirely in 2026-07 — the Academy is an ElderCare-entitled feature, so ElderCare's subscription is the only bill an agency sees.
