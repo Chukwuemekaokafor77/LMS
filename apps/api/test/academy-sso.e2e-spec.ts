@@ -11,7 +11,7 @@ import { drainQueues } from "./drain-queues";
  * only ElderCare's exchange endpoint stubbed. Proves: JIT provisioning of
  * Organization/Site/User/Staff from claims, the Seam-2a role mapping
  * (incl. the NS→CCA rule), the entitlement gate, and that the minted session
- * token authenticates against the real guard (dual-stack composite provider).
+ * token authenticates against the real guard (AcademyIdentityProvider).
  */
 let t: TestApp;
 let db: PrismaClient;
@@ -81,11 +81,11 @@ beforeEach(async () => {
 
 describe("Academy SSO handoff", () => {
   it("JIT-provisions org/site/user/staff and mints a session that authenticates", async () => {
-    nextClaims.set("tok-nb-psw", claims());
+    nextClaims.set("academy-sso-handoff-tok-nb-psw", claims());
     const res = await t
       .anon()
       .post("/auth/sso")
-      .send({ token: "tok-nb-psw" })
+      .send({ token: "academy-sso-handoff-tok-nb-psw" })
       .expect(201);
     expect(res.body.expiresIn).toBe(8 * 60 * 60);
     const sessionToken = res.body.sessionToken as string;
@@ -119,13 +119,13 @@ describe("Academy SSO handoff", () => {
   });
 
   it("maps a Nova Scotia home-support worker to the CCA role", async () => {
-    nextClaims.set("tok-ns", claims({
+    nextClaims.set("academy-sso-handoff-tok-ns", claims({
       sub: "ec_user_ns",
       org: { id: "ec_org_ns", name: "Halifax Care", province: "Nova Scotia" },
       facility: null,
       role: "psw",
     }));
-    await t.anon().post("/auth/sso").send({ token: "tok-ns" }).expect(201);
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-ns" }).expect(201);
     const user = await db.user.findUnique({
       where: { externalAuthId: "ec_user_ns" },
     });
@@ -136,58 +136,58 @@ describe("Academy SSO handoff", () => {
   });
 
   it("maps a manager to ORG_ADMIN and a coordinator to SITE_ADMIN", async () => {
-    nextClaims.set("tok-mgr", claims({
+    nextClaims.set("academy-sso-handoff-tok-mgr", claims({
       sub: "ec_mgr",
       email: "boss@example.com",
       org: { id: "ec_org_2", name: "PEI Care", province: "PE" },
       facility: null,
       role: "director_of_care",
     }));
-    await t.anon().post("/auth/sso").send({ token: "tok-mgr" }).expect(201);
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-mgr" }).expect(201);
     const mgr = await db.user.findUnique({ where: { externalAuthId: "ec_mgr" } });
     const mgrStaff = await db.staff.findUnique({ where: { userId: mgr!.id } });
     expect(mgrStaff?.roleCode).toBe("PE_MGMT");
     expect(mgrStaff?.orgPermission).toBe("ORG_ADMIN");
 
-    nextClaims.set("tok-coord", claims({
+    nextClaims.set("academy-sso-handoff-tok-coord", claims({
       sub: "ec_coord",
       email: "coord@example.com",
       org: { id: "ec_org_2", name: "PEI Care", province: "PE" },
       facility: null,
       role: "care_coordinator",
     }));
-    await t.anon().post("/auth/sso").send({ token: "tok-coord" }).expect(201);
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-coord" }).expect(201);
     const coord = await db.user.findUnique({ where: { externalAuthId: "ec_coord" } });
     const coordStaff = await db.staff.findUnique({ where: { userId: coord!.id } });
     expect(coordStaff?.orgPermission).toBe("SITE_ADMIN");
   });
 
   it("rejects a lapsed entitlement (403), a no-seat role (403), and an unsupported province (400)", async () => {
-    nextClaims.set("tok-lapsed", claims({ sub: "l", entitlement: { status: "canceled", tier: "trial", seats: 0 } }));
-    await t.anon().post("/auth/sso").send({ token: "tok-lapsed" }).expect(403);
+    nextClaims.set("academy-sso-handoff-tok-lapsed", claims({ sub: "l", entitlement: { status: "canceled", tier: "trial", seats: 0 } }));
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-lapsed" }).expect(403);
 
-    nextClaims.set("tok-family", claims({ sub: "f", role: "family" }));
-    await t.anon().post("/auth/sso").send({ token: "tok-family" }).expect(403);
+    nextClaims.set("academy-sso-handoff-tok-family", claims({ sub: "f", role: "family" }));
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-family" }).expect(403);
 
-    nextClaims.set("tok-qc", claims({ sub: "q", org: { id: "o", name: "QC", province: "QC" } }));
-    await t.anon().post("/auth/sso").send({ token: "tok-qc" }).expect(400);
+    nextClaims.set("academy-sso-handoff-tok-qc", claims({ sub: "q", org: { id: "o", name: "QC", province: "QC" } }));
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-qc" }).expect(400);
 
     expect(await db.user.count()).toBe(0);
   });
 
   it("re-signin updates role/site from ElderCare (system of record); a bad token is 400", async () => {
-    nextClaims.set("tok-a", claims({ role: "psw" }));
-    await t.anon().post("/auth/sso").send({ token: "tok-a" }).expect(201);
+    nextClaims.set("academy-sso-handoff-tok-a", claims({ role: "psw" }));
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-a" }).expect(201);
 
     // Promotion in ElderCare → reflected on next sign-in.
-    nextClaims.set("tok-b", claims({ role: "director_of_care", facility: null }));
-    await t.anon().post("/auth/sso").send({ token: "tok-b" }).expect(201);
+    nextClaims.set("academy-sso-handoff-tok-b", claims({ role: "director_of_care", facility: null }));
+    await t.anon().post("/auth/sso").send({ token: "academy-sso-handoff-tok-b" }).expect(201);
     const user = await db.user.findUnique({ where: { externalAuthId: "ec_user_1" } });
     const staff = await db.staff.findUnique({ where: { userId: user!.id } });
     expect(staff?.roleCode).toBe("NB_MGMT");
     expect(staff?.orgPermission).toBe("ORG_ADMIN");
     expect(await db.staff.count()).toBe(1); // updated, not duplicated
 
-    await t.anon().post("/auth/sso").send({ token: "unknown-token" }).expect(400);
+    await t.anon().post("/auth/sso").send({ token: "unknown-handoff-token-xyz" }).expect(400);
   });
 });
