@@ -79,6 +79,9 @@ model User {
 
 model Organization {
   id                      String       @id @default(cuid())
+  /// ElderCare agency id (Seam 2 JIT provisioning). Null for orgs created
+  /// through the pre-federation onboarding flow.
+  externalOrgId           String?      @unique
   name                    String
   jurisdiction            Jurisdiction
   primaryRegulator        String?      // e.g. "NB Dept. of Social Development"
@@ -105,6 +108,8 @@ model Site {
   id                     String   @id @default(cuid())
   orgId                  String
   org                    Organization @relation(fields: [orgId], references: [id])
+  /// ElderCare facility/branch id (Seam 2 JIT provisioning).
+  externalFacilityId     String?  @unique
   name                   String
   address                String?
   regulatorLicenseNumber String?

@@ -8,7 +8,7 @@ import { runAsSystem, runWithOrgContext } from "../src/tenant/tenant-context";
 /**
  * LMS-C1 — real two-org cross-tenant isolation suite (the #1 commercial/legal
  * risk). Seeds two complete org graphs (A, B) in a real Postgres, then drives
- * the *real* HTTP stack (tenant-scope middleware → Clerk guard → controller →
+ * the *real* HTTP stack (tenant-scope middleware → auth guard → controller →
  * service → Prisma guardrail) and asserts that an Org-A actor can never see or
  * mutate Org-B's PHI, and vice-versa.
  *

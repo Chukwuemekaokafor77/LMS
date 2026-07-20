@@ -4,6 +4,7 @@ import { TerminusModule } from "@nestjs/terminus";
 import { PrismaModule } from "./prisma/prisma.module";
 import { HealthController } from "./health/health.controller";
 import { AuthModule } from "./auth/auth.module";
+import { AcademyModule } from "./auth/academy/academy.module";
 import { AuditModule } from "./audit/audit.module";
 import { QueueModule } from "./queue/queue.module";
 import { StorageModule } from "./storage/storage.module";
@@ -31,6 +32,7 @@ import { RetentionModule } from "./retention/retention.module";
     StorageModule,
     StaffModule,
     AuthModule,
+    AcademyModule,
     ModulesModule,
     AuthoringModule,
     VideoModule,

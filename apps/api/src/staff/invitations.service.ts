@@ -24,14 +24,14 @@ export type InviteInput = {
   employmentType?: string;
 };
 
-/** Invitations expire after 30 days (matches the old Clerk default). */
+/** Invitations expire after 30 days. */
 export const INVITATION_TTL_DAYS = 30;
 
 const hashToken = (raw: string) =>
   createHash("sha256").update(raw).digest("hex");
 
 /**
- * LMS-native staff invitations (LMS-M6 step 3). Replaces Clerk's
+ * LMS-native staff invitations (LMS-M6 step 3). Replaced the former Clerk
  * invitation + webhook-publicMetadata mechanism:
  *
  *   invite  → Invitation row (SHA-256 of a one-time token; raw token only in

@@ -3,19 +3,21 @@ import { ValidationPipe } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
-import { ClerkService } from "../src/auth/clerk.service";
+import { IDENTITY_PROVIDER } from "../src/auth/identity-provider";
 import { S3Service } from "../src/storage/s3.service";
 import { MuxService } from "../src/video/mux.service";
 import { tenantScopeMiddleware } from "../src/tenant/tenant-scope.middleware";
 
 /**
  * Boots the *real* app for the cross-tenant e2e suite (LMS-C1): real Postgres +
- * Redis, the real tenant-scope middleware + Clerk guard + Prisma guardrail. Only
- * the three services that do real network/crypto I/O are stubbed:
+ * Redis, the real tenant-scope middleware + auth guard + Prisma guardrail. Only
+ * the services that do real network/crypto I/O are stubbed:
  *
- *   - ClerkService — auth bypass: the bearer token *is* the externalAuthId, so the
- *     real guard resolves the seeded Staff and sets the org context. This is
- *     what exercises the H1 request→context→guardrail chain end-to-end.
+ *   - IDENTITY_PROVIDER — auth bypass: the bearer token *is* the externalAuthId,
+ *     so the real guard resolves the seeded Staff and sets the org context. This
+ *     is what exercises the H1 request→context→guardrail chain end-to-end. Pass
+ *     `stubIdentity: false` to drive the real AcademyIdentityProvider (the SSO
+ *     spec does this so a minted session token authenticates for real).
  *   - S3Service / MuxService — return canned values so cert-download and video
  *     playback don't need real AWS/Mux credentials.
  *
@@ -23,18 +25,13 @@ import { tenantScopeMiddleware } from "../src/tenant/tenant-scope.middleware";
  * is the production wiring.
  */
 
-// Stable webhook secrets the signature tests sign with. The Clerk/svix one must
-// be a valid base64 body after the `whsec_` prefix.
+// Stable webhook secret the Mux signature tests sign with.
 export const TEST_MUX_WEBHOOK_SECRET = "mux_webhook_dummy_secret";
-export const TEST_CLERK_WEBHOOK_SECRET =
-  "whsec_" + Buffer.from("clerk-webhook-test-secret-key!!!").toString("base64");
 
 // Dummy config so every getOrThrow at module init succeeds. DATABASE_URL and
 // REDIS_URL are the only ones that must be real (Prisma + BullMQ connect).
 function setDummyEnv() {
   const dummies: Record<string, string> = {
-    CLERK_SECRET_KEY: "sk_test_dummy",
-    CLERK_WEBHOOK_SECRET: TEST_CLERK_WEBHOOK_SECRET,
     AWS_REGION: "ca-central-1",
     AWS_S3_BUCKET: "test-bucket",
     AWS_ACCESS_KEY_ID: "test",
@@ -46,16 +43,23 @@ function setDummyEnv() {
     RESEND_API_KEY: "re_test",
     EMAIL_FROM: "test@example.com",
     WEB_BASE_URL: "http://localhost:3000",
+    // Academy SSO: ELDERCARE_API_URL is deliberately left unset — the SSO
+    // spec overrides AcademyExchangeClient, so no real ElderCare call is made.
+    ACADEMY_SESSION_SECRET: "test-academy-session-secret",
+    ACADEMY_EXCHANGE_SECRET: "test-academy-exchange-secret",
   };
   for (const [k, v] of Object.entries(dummies)) {
     if (!process.env[k]) process.env[k] = v;
   }
 }
 
-const clerkStub = {
-  verifyBearer: async (token: string) => ({ sub: token, sid: "test-session" }),
-  getClient: () => {
-    throw new Error("ClerkService.getClient is not stubbed for tests");
+// Identity bypass: the bearer token *is* the externalAuthId, so the real guard
+// resolves the seeded Staff. Replaces the old ClerkService stub; keeps every
+// existing `as(externalAuthId)` call working unchanged.
+const identityProviderStub = {
+  verifyBearer: async (token: string) => ({ externalId: token }),
+  fetchProfile: async (externalId: string) => {
+    throw new Error(`fetchProfile not stubbed (id ${externalId})`);
   },
 };
 
@@ -90,23 +94,37 @@ export type TestApp = {
   anon: () => AuthedRequests;
 };
 
+export type ProviderOverride = { provide: unknown; useValue: unknown };
+
 export type SetupOptions = {
   /** Stub MuxService (default true). Pass false to exercise real Mux webhook
    *  signature verification (the video playback test still uses the stub). */
   stubMux?: boolean;
+  /** Stub the identity provider so bearer == externalAuthId (default true).
+   *  Pass false to drive the real AcademyIdentityProvider (SSO spec). */
+  stubIdentity?: boolean;
+  /** Extra provider overrides (e.g. stub AcademyExchangeClient for the SSO
+   *  spec so no real ElderCare call is made). */
+  overrides?: ProviderOverride[];
 };
 
 export async function setupTestApp(opts: SetupOptions = {}): Promise<TestApp> {
-  const { stubMux = true } = opts;
+  const { stubMux = true, stubIdentity = true, overrides = [] } = opts;
   setDummyEnv();
 
   let builder = Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(ClerkService)
-    .useValue(clerkStub)
     .overrideProvider(S3Service)
     .useValue(s3Stub);
+  if (stubIdentity) {
+    builder = builder
+      .overrideProvider(IDENTITY_PROVIDER)
+      .useValue(identityProviderStub);
+  }
   if (stubMux) {
     builder = builder.overrideProvider(MuxService).useValue(muxStub);
+  }
+  for (const o of overrides) {
+    builder = builder.overrideProvider(o.provide).useValue(o.useValue);
   }
   const moduleRef = await builder.compile();
 
