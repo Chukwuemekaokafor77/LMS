@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -16,7 +16,7 @@ const NB_ROLE_OPTIONS = [
 ];
 
 export function InviteStaffForm() {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(

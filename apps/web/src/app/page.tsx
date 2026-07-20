@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+// Staff reach the Academy through ElderCare's "Training" button, not a
+// standalone sign-in — the marketing CTAs point at the ElderCare app.
+const ELDERCARE = process.env.NEXT_PUBLIC_ELDERCARE_APP_URL ?? "/";
+
 export default function HomePage() {
   return (
     <main>
@@ -40,14 +44,14 @@ export default function HomePage() {
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/sign-up"
+                href={ELDERCARE}
                 className="group inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
               >
                 Book a pilot
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
-                href="/sign-in"
+                href={ELDERCARE}
                 className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-6 py-3 font-medium transition-colors hover:bg-muted"
               >
                 Staff sign in
@@ -125,7 +129,7 @@ export default function HomePage() {
           </p>
           <div className="mt-7 flex justify-center">
             <Link
-              href="/sign-up"
+              href={ELDERCARE}
               className="group inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
             >
               Book a pilot

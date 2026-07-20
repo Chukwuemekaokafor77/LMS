@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export function AcceptInvitation({ token, fr }: { token: string; fr: boolean }) {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
