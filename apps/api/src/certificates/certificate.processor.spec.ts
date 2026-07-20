@@ -20,8 +20,9 @@ describe("CertificateProcessor Idempotency", () => {
     s3 = { putObject: vi.fn() };
     audit = { record: vi.fn() };
     emailQ = { add: vi.fn() };
+    const flowbackQ = { add: vi.fn() };
 
-    processor = new CertificateProcessor(prisma as any, s3 as any, audit as any, emailQ as any);
+    processor = new CertificateProcessor(prisma as any, s3 as any, audit as any, emailQ as any, flowbackQ as any);
     // Mock the renderPdf private method to avoid real PDF generation
     (processor as any).renderPdf = vi.fn().mockResolvedValue(Buffer.from("pdf-data"));
   });

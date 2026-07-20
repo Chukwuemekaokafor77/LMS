@@ -19,6 +19,7 @@ import { RosterModule } from "./roster/roster.module";
 import { RequiredTrainingModule } from "./required-training/required-training.module";
 import { AssignmentsModule } from "./assignments/assignments.module";
 import { CertificatesModule } from "./certificates/certificates.module";
+import { IntegrationsModule } from "./integrations/integrations.module";
 import { ReportsModule } from "./reports/reports.module";
 import { RetentionModule } from "./retention/retention.module";
 
@@ -43,6 +44,7 @@ import { RetentionModule } from "./retention/retention.module";
     RequiredTrainingModule,
     AssignmentsModule,
     CertificatesModule,
+    IntegrationsModule,
     ReportsModule,
     RetentionModule,
   ],

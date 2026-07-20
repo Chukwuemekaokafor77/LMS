@@ -8,6 +8,7 @@ export const QUEUES = {
   materialize: "assignment-materialize",
   certificate: "certificate-generate",
   retention: "retention-sweep",
+  flowback: "credential-flowback",
 } as const;
 
 // Global so the registered queue tokens are injectable from any feature module
@@ -38,6 +39,7 @@ export const QUEUES = {
       { name: QUEUES.materialize },
       { name: QUEUES.certificate },
       { name: QUEUES.retention },
+      { name: QUEUES.flowback },
     ),
   ],
   exports: [BullModule],

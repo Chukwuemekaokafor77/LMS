@@ -18,6 +18,7 @@ export class CertificateProcessor extends WorkerHost {
     private readonly s3: S3Service,
     private readonly audit: AuditService,
     @InjectQueue(QUEUES.email) private readonly emailQ: Queue,
+    @InjectQueue(QUEUES.flowback) private readonly flowbackQ: Queue,
   ) {
     super();
   }
@@ -98,6 +99,15 @@ export class CertificateProcessor extends WorkerHost {
     });
 
     await this.emailQ.add("certificate.issued", { certificateId: cert.id });
+
+    // Seam 3: push the completion to ElderCare as a tracked credential. Retry
+    // with backoff so a transient ElderCare outage doesn't drop it; the
+    // receiver is idempotent on the certificate id.
+    await this.flowbackQ.add(
+      "deliver",
+      { certificateId: cert.id },
+      { attempts: 5, backoff: { type: "exponential", delay: 10_000 } },
+    );
   }
 
   private async renderPdf(args: {
