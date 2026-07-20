@@ -283,9 +283,18 @@ quizzes and upload videos in **Admin → Modules** (PRs #24/#25). The **shared
 library** is authored the same way in Maple Care's own HQ org, then promoted:
 `pnpm --filter @maple-care/api run library:promote -- <slug> [--jurisdiction X]`
 flips it to `orgId = null` (demote back with `--demote-to <orgId>` to edit).
-Module ids survive the round-trip, so assignments keep working. What remains in
-Phase B is the *content itself* (SME writing or licensing) + role rows/policy
-sets per province.
+Module ids survive the round-trip, so assignments keep working.
+
+**Content model (owner decision 2026-07-20): BYO-first.** Agencies add their
+own content/materials via the authoring UI; a licensed catalog can be added
+post-revenue. A **home-care STARTER LIBRARY** ships as global modules (seed:
+`pnpm --filter @maple-care/api run seed:homecare`) — 6 bilingual best-practice
+modules (Home Support Fundamentals, Lone-Worker Safety, IPAC in the Home, Falls
+Prevention in the Home, Privacy & Confidentiality, Safe Travel Between Clients),
+23 lessons + 21 EN/FR quiz questions. **Starter/example only — SME review
+required before use as compliance; not marketed as provincially mandated** (see
+§B0). Lesson videos remain BYO. Remaining Phase B work: SME review of the
+starter content, more modules, per-province role rows / policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
