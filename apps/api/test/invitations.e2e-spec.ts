@@ -6,7 +6,7 @@ import { seedTwoOrgs, type Fixtures } from "./seed-two-orgs";
 import { QUEUES } from "../src/queue/queue.module";
 
 /**
- * LMS-native invitations (LMS-M6 step 3) — replaces Clerk invitations + the
+ * LMS-native invitations (LMS-M6 step 3) — replaced Clerk invitations + the
  * webhook publicMetadata materialization. Covers the whole lifecycle over the
  * real HTTP stack: invite (org-scoped, emails a one-time token) → accept
  * (email-bound, single-use, creates the Staff row) → revoke; plus the

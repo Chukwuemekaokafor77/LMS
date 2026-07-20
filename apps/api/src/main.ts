@@ -5,14 +5,14 @@ import { AppModule } from "./app.module";
 import { tenantScopeMiddleware } from "./tenant/tenant-scope.middleware";
 
 async function bootstrap() {
-  // rawBody: true makes req.rawBody available for Mux/Clerk
+  // rawBody: true makes req.rawBody available for Mux webhooks
   // signature verification while still parsing JSON normally.
   const app = await NestFactory.create(AppModule, {
     cors: true,
     rawBody: true,
   });
 
-  // Open a tenant scope around every request *before* guards run, so the Clerk
+  // Open a tenant scope around every request *before* guards run, so the auth
   // guard can populate orgId into it and the Prisma guardrail (LMS-H1) can read
   // it on every PHI query for the rest of the request. Must be the outermost
   // middleware. See tenant/tenant-scope.middleware.ts.

@@ -207,6 +207,24 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-20_ — **LMS-M6 complete: Clerk decommissioned; ElderCare Academy SSO
+  is the sole identity source.** Hard switch (owner's call — no real users yet,
+  so no gradual dual-stack window needed). Added the Academy handoff on the LMS
+  side: `POST /auth/sso` exchanges ElderCare's one-time token
+  (HMAC service auth) → JIT-provisions Organization/Site/User/Staff from the
+  claims (Seam 2 + the Seam-2a role map, incl. the NS→CCA rule), enforces the
+  entitlement gate, and mints an 8h Academy session (`AcademySessionService`,
+  HS256). `AcademyIdentityProvider` bound to `IDENTITY_PROVIDER` verifies those
+  sessions; the guard is now provider-agnostic (`ClerkAuthGuard`→`AuthGuard`).
+  **Deleted:** `ClerkService`, `ClerkIdentityProvider`, the Clerk webhook
+  controller, `@clerk/backend` + `svix` deps, and all `CLERK_*` env. Schema:
+  `Organization.externalOrgId` + `Site.externalFacilityId` (JIT join keys,
+  migration; drift-gate clean). Tests: new `academy-sso.e2e-spec` (JIT + role
+  mapping + entitlement + session auth) and `eldercare-role-map.spec`; harness
+  now stubs `IDENTITY_PROVIDER` (bearer==externalAuthId) instead of Clerk; the
+  Clerk-webhook C2 case removed. **LMS-M1's rotation scope drops Clerk entirely
+  — now just Mux/AWS/Resend + the two Academy secrets.** Residency: with Clerk
+  gone, identity data is ca-central-1 end-to-end. Web session swap is Branch B.
 - _2026-07-18_ — **Stripe decommissioned (owner decision — see the direction
   amendments in [LMS_COMPLETION_PLAN.md](LMS_COMPLETION_PLAN.md)):** the LMS is
   an **ElderCare-entitled** product (home-care only; training is an ElderCare

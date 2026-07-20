@@ -1,16 +1,13 @@
 /**
- * Provider-agnostic identity seam (LMS-M6 decommission plan, step 1).
- *
- * The auth guard and current-user resolution depend on this interface instead
- * of Clerk directly, so the eventual cutover to the ElderCare OIDC verifier is
- * a provider swap behind one injection token — not a rewrite of the audited
- * request → context → guardrail chain. Clerk remains the only implementation
- * until the swap is un-gated (ElderCare must ship an OIDC provider first).
+ * Provider-agnostic identity seam. The auth guard and current-user resolution
+ * depend on this interface, not on a concrete provider, so the identity source
+ * is a one-line binding swap. Current impl: ElderCare Academy session tokens
+ * (Clerk was decommissioned — LMS-M6 complete).
  */
 
 /** Result of verifying a bearer token. */
 export type VerifiedIdentity = {
-  /** The provider's stable subject for the user (today: the Clerk user id). */
+  /** The provider's stable subject for the user (the ElderCare user id). */
   externalId: string;
   sessionId?: string;
 };

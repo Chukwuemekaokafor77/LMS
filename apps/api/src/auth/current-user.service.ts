@@ -13,9 +13,10 @@ export class CurrentUserService {
   ) {}
 
   /**
-   * Resolve (or provision on first sight) the local User for a verified
-   * identity subject (`User.externalAuthId` — today a Clerk user id, post-M6
-   * the ElderCare OIDC `sub`).
+   * Resolve the local User for a verified identity subject
+   * (`User.externalAuthId` = the ElderCare user id). Academy users are
+   * provisioned at /auth/sso, so the lookup normally hits; the fetchProfile
+   * fallback exists only for the provisioned-elsewhere edge and fails loud.
    */
   async upsertFromIdentity(externalId: string) {
     const existing = await this.prisma.user.findUnique({

@@ -1,21 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { createHmac } from "crypto";
-import { Webhook } from "svix";
 import { PrismaClient } from "@prisma/client";
-import {
-  setupTestApp,
-  type TestApp,
-  TEST_MUX_WEBHOOK_SECRET,
-  TEST_CLERK_WEBHOOK_SECRET,
-} from "./harness";
+import { setupTestApp, type TestApp, TEST_MUX_WEBHOOK_SECRET } from "./harness";
 import { seedC2Base, type C2Base } from "./seed-c2";
 
 /**
- * LMS-C2 — webhook signature verification + idempotency for both providers
- * (Stripe was decommissioned 2026-07-18 — the LMS is ElderCare-entitled and
- * has no billing). A bad signature is rejected (400); a valid one is processed
- * and replaying it is a no-op. Each provider's real verification runs (Mux
- * included, via stubMux:false) — only the signing helpers are test-side.
+ * LMS-C2 — webhook signature verification + idempotency. Only Mux remains:
+ * Stripe was decommissioned 2026-07-18 (ElderCare-entitled, no billing) and
+ * the Clerk webhook was removed 2026-07-20 (Clerk decommissioned — LMS-M6).
+ * A bad signature is rejected (400); a valid one is processed and replaying
+ * it is a no-op. Mux's real verification runs (via stubMux:false).
  */
 let t: TestApp;
 let db: PrismaClient;
@@ -85,63 +79,6 @@ describe("LMS-C2 webhooks", () => {
       const lesson = await db.lesson.findUnique({ where: { id: lessonId } });
       expect(lesson?.videoStatus).toBe("READY");
       expect(lesson?.muxPlaybackId).toBe("pb_ready");
-    });
-  });
-
-  describe("Clerk (svix)", () => {
-    function clerkHeaders(payload: string) {
-      const wh = new Webhook(TEST_CLERK_WEBHOOK_SECRET);
-      const id = "msg_c2";
-      const timestamp = new Date();
-      const signature = wh.sign(id, timestamp, payload);
-      return {
-        "svix-id": id,
-        "svix-timestamp": String(Math.floor(timestamp.getTime() / 1000)),
-        "svix-signature": signature,
-      };
-    }
-
-    const userCreated = (clerkId: string) =>
-      JSON.stringify({
-        type: "user.created",
-        data: {
-          id: clerkId,
-          email_addresses: [{ id: "em_1", email_address: "invited@example.com" }],
-          primary_email_address_id: "em_1",
-          first_name: "Invited",
-          last_name: "User",
-        },
-      });
-
-    it("rejects a bad signature (400)", async () => {
-      await t
-        .anon()
-        .post("/webhooks/clerk")
-        .set("svix-id", "msg_x")
-        .set("svix-timestamp", String(Math.floor(Date.now() / 1000)))
-        .set("svix-signature", "v1,deadbeef")
-        .set("content-type", "application/json")
-        .send(userCreated("clerk_new"))
-        .expect(400);
-    });
-
-    it("upserts the User on a valid event — and no longer materializes Staff (LMS-M6 step 3)", async () => {
-      const payload = userCreated("clerk_invited_c2");
-      const headers = clerkHeaders(payload);
-      await t
-        .anon()
-        .post("/webhooks/clerk")
-        .set(headers)
-        .set("content-type", "application/json")
-        .send(payload)
-        .expect(200);
-
-      const user = await db.user.findUnique({ where: { externalAuthId: "clerk_invited_c2" } });
-      expect(user).not.toBeNull();
-      // Staff creation moved to the LMS-native invitation accept flow
-      // (invitations.e2e-spec.ts) — the webhook is identity sync only.
-      const staff = await db.staff.findUnique({ where: { userId: user!.id } });
-      expect(staff).toBeNull();
     });
   });
 });

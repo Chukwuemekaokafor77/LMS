@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Observable, tap } from "rxjs";
-import type { AuthedRequest } from "../auth/clerk-auth.guard";
+import type { AuthedRequest } from "../auth/auth.guard";
 import { RecordAccessService } from "./record-access.service";
 import {
   PHI_ACCESS_KEY,

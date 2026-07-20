@@ -1,23 +1,21 @@
 import { Global, Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
-import { ClerkService } from "./clerk.service";
-import { ClerkAuthGuard } from "./clerk-auth.guard";
+import { AuthGuard } from "./auth.guard";
 import { CurrentUserService } from "./current-user.service";
-import { ClerkWebhookController } from "./clerk-webhook.controller";
 import { IDENTITY_PROVIDER } from "./identity-provider";
-import { ClerkIdentityProvider } from "./clerk-identity-provider";
+import { AcademySessionService } from "./academy/academy-session.service";
+import { AcademyIdentityProvider } from "./academy/academy-identity-provider";
 
 @Global()
 @Module({
-  controllers: [ClerkWebhookController],
   providers: [
-    ClerkService,
-    // The guard + current-user resolution depend on this seam, not on Clerk —
-    // the LMS-M6 cutover swaps this binding to the ElderCare OIDC verifier.
-    { provide: IDENTITY_PROVIDER, useClass: ClerkIdentityProvider },
+    AcademySessionService,
+    // Clerk is gone (LMS-M6 complete): the sole identity provider verifies
+    // ElderCare Academy session tokens. Bind a different impl here to swap it.
+    { provide: IDENTITY_PROVIDER, useClass: AcademyIdentityProvider },
     CurrentUserService,
-    { provide: APP_GUARD, useClass: ClerkAuthGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [ClerkService, IDENTITY_PROVIDER, CurrentUserService],
+  exports: [IDENTITY_PROVIDER, CurrentUserService, AcademySessionService],
 })
 export class AuthModule {}

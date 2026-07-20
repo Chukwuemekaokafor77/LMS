@@ -24,8 +24,14 @@ export type AuthedRequest = Request & {
   staff?: StaffContext;
 };
 
+/**
+ * Global auth guard. Verifies the bearer token via the active
+ * {@link IdentityProvider} (post-cutover: ElderCare Academy session tokens),
+ * provisions/loads the User, and opens the request's tenant scope. Provider-
+ * agnostic by design — see the LMS-M6 decommission plan.
+ */
 @Injectable()
-export class ClerkAuthGuard implements CanActivate {
+export class AuthGuard implements CanActivate {
   constructor(
     @Inject(IDENTITY_PROVIDER) private readonly identity: IdentityProvider,
     private readonly currentUser: CurrentUserService,

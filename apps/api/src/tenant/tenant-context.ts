@@ -21,7 +21,7 @@ export type TenantContext =
 
 /**
  * The store is a *mutable holder* rather than the context value itself: the
- * scope is opened up-front by middleware (before auth runs), then the Clerk
+ * scope is opened up-front by middleware (before auth runs), then the auth
  * guard fills in `orgId` once it has resolved the actor — all within the same
  * async context, so later DB calls in the request see it.
  */
@@ -31,7 +31,7 @@ const storage = new AsyncLocalStorage<TenantStore>();
 
 /**
  * Open an empty tenant scope for the lifetime of `fn` (one per HTTP request,
- * installed as the outermost middleware). The Clerk guard calls
+ * installed as the outermost middleware). The auth guard calls
  * {@link setOrgContext} later to populate it.
  */
 export function withTenantScope<T>(fn: () => T): T {
@@ -39,7 +39,7 @@ export function withTenantScope<T>(fn: () => T): T {
 }
 
 /**
- * Populate the current request's org context. Called by the Clerk guard after
+ * Populate the current request's org context. Called by the auth guard after
  * it resolves the actor's `Staff` row. Throws if there is no open scope (a
  * wiring bug — the middleware must run first).
  */
@@ -56,7 +56,7 @@ export function setOrgContext(orgId: string): void {
 /**
  * Run `fn` with an explicit org context. For background jobs / webhook handlers
  * that know which org they act for but run outside the HTTP request scope
- * (e.g. the Clerk-webhook invitation acceptance, which carries `orgId`).
+ * (e.g. the invitation acceptance, which carries `orgId`).
  */
 export function runWithOrgContext<T>(orgId: string, fn: () => T): T {
   return storage.run({ context: { kind: "org", orgId } }, fn);
