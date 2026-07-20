@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -25,7 +25,7 @@ export function LessonPlayer({
   nextHref: string | null;
   moduleHref: string;
 }) {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const router = useRouter();
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [completed, setCompleted] = useState(initiallyCompleted);

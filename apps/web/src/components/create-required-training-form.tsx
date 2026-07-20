@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -20,7 +20,7 @@ export function CreateRequiredTrainingForm({
 }: {
   modules: { id: string; titleEn: string }[];
 }) {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

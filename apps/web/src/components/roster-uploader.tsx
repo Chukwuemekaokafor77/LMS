@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { ChangeEvent, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -14,7 +14,7 @@ type Status = {
 };
 
 export function RosterUploader() {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<Status | null>(null);

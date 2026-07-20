@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -13,7 +13,7 @@ const JURISDICTIONS = [
 ] as const;
 
 export function OnboardingForm() {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

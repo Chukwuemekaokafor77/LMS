@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "./session-client";
 import { useCallback } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -10,7 +10,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
  * API's error message on non-2xx so callers can surface it directly.
  */
 export function useApi() {
-  const { getToken } = useAuth();
+  const { getToken } = useSession();
   return useCallback(
     async <T = unknown>(path: string, init: RequestInit = {}): Promise<T> => {
       const token = await getToken();
