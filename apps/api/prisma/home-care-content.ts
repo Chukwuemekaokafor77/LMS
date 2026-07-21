@@ -518,4 +518,475 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       },
     ],
   },
+
+  // ── 7. Safe Lifting & Client Handling ────────────────────────────────
+  {
+    slug: "safe-lifting-client-handling",
+    titleEn: "Safe Lifting & Client Handling",
+    titleFr: "Levage et manutention sécuritaires des clients",
+    descriptionEn:
+      "Body mechanics, safe transfers, and using mobility aids to protect both the client and yourself from injury in the home.",
+    descriptionFr:
+      "Mécanique corporelle, transferts sécuritaires et utilisation des aides à la mobilité pour protéger le client et vous-même des blessures à domicile.",
+    durationMin: 30,
+    passMark: 80,
+    lessons: [
+      { titleEn: "Body mechanics and protecting your back", titleFr: "Mécanique corporelle et protection du dos" },
+      { titleEn: "Assessing before you move a client", titleFr: "Évaluer avant de déplacer un client" },
+      { titleEn: "Safe transfers and using mobility aids", titleFr: "Transferts sécuritaires et aides à la mobilité" },
+      { titleEn: "When not to lift alone", titleFr: "Quand ne pas soulever seul" },
+    ],
+    questions: [
+      {
+        promptEn: "When lifting or helping a client move, you should:",
+        promptFr: "Lorsque vous soulevez ou aidez un client à se déplacer, vous devriez :",
+        choicesEn: [
+          "Bend at the waist and lift with your back",
+          "Keep the load close, bend your knees, and lift with your legs",
+          "Twist quickly to move the load across",
+          "Hold your breath and pull upward sharply",
+        ],
+        choicesFr: [
+          "Vous pencher à la taille et soulever avec le dos",
+          "Garder la charge près de vous, plier les genoux et soulever avec les jambes",
+          "Pivoter rapidement pour déplacer la charge",
+          "Retenir votre souffle et tirer d'un coup sec",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Keep the load close, bend your knees, keep your back straight, and use your legs — never twist your spine under load.",
+        explainFr:
+          "Gardez la charge près de vous, pliez les genoux, gardez le dos droit et utilisez vos jambes — ne pivotez jamais la colonne sous une charge.",
+      },
+      {
+        promptEn: "Before helping a client transfer, your first step is to:",
+        promptFr: "Avant d'aider un client à faire un transfert, votre première étape est de :",
+        choicesEn: [
+          "Start lifting right away to save time",
+          "Check the care plan for the approved method and confirm the client's ability today",
+          "Assume yesterday's method still works",
+          "Ask a neighbour to help",
+        ],
+        choicesFr: [
+          "Commencer à soulever tout de suite pour gagner du temps",
+          "Vérifier la méthode approuvée au plan de soins et confirmer la capacité du client aujourd'hui",
+          "Présumer que la méthode d'hier fonctionne encore",
+          "Demander à un voisin d'aider",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Follow the care-plan method and re-check the client's ability each visit — it can change day to day.",
+        explainFr:
+          "Suivez la méthode du plan de soins et revérifiez la capacité du client à chaque visite — elle peut changer d'un jour à l'autre.",
+      },
+      {
+        promptEn: "A client is heavier than you can safely move alone. You should attempt it anyway to stay on schedule.",
+        promptFr: "Un client est plus lourd que ce que vous pouvez déplacer seul en sécurité. Vous devriez quand même essayer pour respecter l'horaire.",
+        type: "TRUE_FALSE",
+        choicesEn: ["True", "False"],
+        choicesFr: ["Vrai", "Faux"],
+        correctIdx: [1],
+        explainEn:
+          "Never exceed safe limits. Use the mobility aid or two-person assist in the care plan, and report if more help is needed.",
+        explainFr:
+          "Ne dépassez jamais les limites sécuritaires. Utilisez l'aide à la mobilité ou l'assistance à deux prévue au plan de soins et signalez tout besoin d'aide supplémentaire.",
+      },
+      {
+        promptEn: "Which reduce your risk of injury during a transfer? (Select all that apply)",
+        promptFr: "Lesquels réduisent votre risque de blessure durant un transfert? (Sélectionnez tout ce qui s'applique)",
+        type: "MULTIPLE",
+        choicesEn: [
+          "Keeping a wide, stable stance",
+          "Using a transfer belt or aid as trained",
+          "Keeping the client close to your body",
+          "Twisting your spine to turn the client",
+        ],
+        choicesFr: [
+          "Adopter une position large et stable",
+          "Utiliser une ceinture de transfert ou une aide comme on vous l'a appris",
+          "Garder le client près de votre corps",
+          "Pivoter la colonne pour tourner le client",
+        ],
+        correctIdx: [0, 1, 2],
+        explainEn: "A stable stance, trained use of aids, and keeping the load close protect you; twisting under load causes injury.",
+        explainFr: "Une position stable, l'usage appris des aides et une charge rapprochée vous protègent; pivoter sous charge cause des blessures.",
+      },
+    ],
+  },
+
+  // ── 8. Dementia & Responsive Behaviours ──────────────────────────────
+  {
+    slug: "dementia-responsive-behaviours",
+    titleEn: "Dementia & Responsive Behaviours",
+    titleFr: "Démence et comportements réactifs",
+    descriptionEn:
+      "Understanding dementia, communicating supportively, and responding to distress or responsive behaviours with a person-centred, non-restraint approach in the home.",
+    descriptionFr:
+      "Comprendre la démence, communiquer avec soutien et réagir à la détresse ou aux comportements réactifs selon une approche centrée sur la personne et sans contention, à domicile.",
+    durationMin: 35,
+    passMark: 80,
+    lessons: [
+      { titleEn: "Understanding dementia", titleFr: "Comprendre la démence" },
+      { titleEn: "Communicating with a person living with dementia", titleFr: "Communiquer avec une personne atteinte de démence" },
+      { titleEn: "Responsive behaviours have meaning", titleFr: "Les comportements réactifs ont un sens" },
+      { titleEn: "Preventing and de-escalating distress", titleFr: "Prévenir et désamorcer la détresse" },
+    ],
+    questions: [
+      {
+        promptEn: "A client with dementia becomes agitated in the late afternoon. The best first step is to:",
+        promptFr: "Un client atteint de démence devient agité en fin d'après-midi. La meilleure première étape est de :",
+        choicesEn: [
+          "Raise your voice so they understand",
+          "Stay calm and look for an unmet need — pain, hunger, toileting, or overstimulation — and reassure",
+          "Physically restrain them until they settle",
+          "Leave the home until they calm down",
+        ],
+        choicesFr: [
+          "Hausser la voix pour qu'il comprenne",
+          "Rester calme et chercher un besoin non comblé — douleur, faim, élimination ou surstimulation — et rassurer",
+          "Le maîtriser physiquement jusqu'à ce qu'il se calme",
+          "Quitter le domicile jusqu'à ce qu'il se calme",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Responsive behaviours usually signal an unmet need. Stay calm, look for the cause, and reassure — restraint is not appropriate.",
+        explainFr:
+          "Les comportements réactifs signalent souvent un besoin non comblé. Restez calme, cherchez la cause et rassurez — la contention n'est pas appropriée.",
+      },
+      {
+        promptEn: "Arguing with or correcting a client's false belief is usually the best approach.",
+        promptFr: "Contredire ou corriger la fausse croyance d'un client est habituellement la meilleure approche.",
+        type: "TRUE_FALSE",
+        choicesEn: ["True", "False"],
+        choicesFr: ["Vrai", "Faux"],
+        correctIdx: [1],
+        explainEn:
+          "Arguing or reorienting often increases distress. Use validation and gentle redirection instead.",
+        explainFr:
+          "Contredire ou réorienter augmente souvent la détresse. Utilisez plutôt la validation et une redirection douce.",
+      },
+      {
+        promptEn: "Helpful ways to communicate with a person living with dementia include: (Select all that apply)",
+        promptFr: "Les façons utiles de communiquer avec une personne atteinte de démence comprennent : (Sélectionnez tout ce qui s'applique)",
+        type: "MULTIPLE",
+        choicesEn: [
+          "Short, simple sentences",
+          "Approaching from the front and making eye contact",
+          "Speaking quickly and offering many choices at once",
+          "Allowing extra time to respond",
+        ],
+        choicesFr: [
+          "Des phrases courtes et simples",
+          "Approcher de face et établir un contact visuel",
+          "Parler vite et offrir plusieurs choix à la fois",
+          "Laisser plus de temps pour répondre",
+        ],
+        correctIdx: [0, 1, 3],
+        explainEn: "Simple language, a calm frontal approach, and patience help; rushing and too many choices overwhelm.",
+        explainFr: "Un langage simple, une approche calme de face et de la patience aident; se presser et multiplier les choix submergent.",
+      },
+      {
+        promptEn: "Which best describes a 'responsive behaviour'?",
+        promptFr: "Qu'est-ce qui décrit le mieux un « comportement réactif »?",
+        choicesEn: [
+          "Deliberate misbehaviour to annoy the worker",
+          "An action such as pacing or calling out that often communicates an unmet need or distress",
+          "A normal part of aging that should be ignored",
+          "A reason to withhold care",
+        ],
+        choicesFr: [
+          "Une mauvaise conduite délibérée pour ennuyer le préposé",
+          "Une action comme faire les cent pas ou crier qui exprime souvent un besoin non comblé ou de la détresse",
+          "Une partie normale du vieillissement à ignorer",
+          "Une raison de refuser les soins",
+        ],
+        correctIdx: [1],
+        explainEn: "Responsive behaviours are meaningful communication, not deliberate misbehaviour — respond to the underlying need.",
+        explainFr: "Les comportements réactifs sont une communication porteuse de sens, non une mauvaise conduite délibérée — répondez au besoin sous-jacent.",
+      },
+    ],
+  },
+
+  // ── 9. Medication Support in the Home ────────────────────────────────
+  {
+    slug: "medication-support-home",
+    titleEn: "Medication Support in the Home",
+    titleFr: "Soutien à la médication à domicile",
+    descriptionEn:
+      "The home-support worker's limited role with medications — reminding and assisting within scope, safe storage, observing for problems, and the firm line at administration.",
+    descriptionFr:
+      "Le rôle limité du préposé au soutien à domicile envers les médicaments — rappeler et aider dans les limites du champ de pratique, entreposage sécuritaire, observation des problèmes et la limite ferme à l'administration.",
+    durationMin: 25,
+    passMark: 80,
+    lessons: [
+      { titleEn: "Assisting vs administering: know the line", titleFr: "Aider ou administrer : connaître la limite" },
+      { titleEn: "Supporting a client to take their own medications", titleFr: "Aider un client à prendre ses propres médicaments" },
+      { titleEn: "Safe storage and observing for problems", titleFr: "Entreposage sécuritaire et observation des problèmes" },
+      { titleEn: "Reporting medication concerns", titleFr: "Signaler les préoccupations liées aux médicaments" },
+    ],
+    questions: [
+      {
+        promptEn: "Within a typical home-support scope, you may:",
+        promptFr: "Dans un champ de pratique habituel du soutien à domicile, vous pouvez :",
+        choicesEn: [
+          "Decide to change the client's dose",
+          "Remind the client and hand them their own labelled blister pack to take themselves",
+          "Give an injection if the family asks",
+          "Crush and mix medications without direction",
+        ],
+        choicesFr: [
+          "Décider de modifier la dose du client",
+          "Rappeler au client et lui remettre sa propre plaquette étiquetée pour qu'il la prenne lui-même",
+          "Administrer une injection si la famille le demande",
+          "Écraser et mélanger des médicaments sans directive",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Reminding and assisting a client to self-administer is within scope; changing doses or administering is not — escalate to the nurse.",
+        explainFr:
+          "Rappeler et aider un client à s'auto-administrer relève du champ de pratique; modifier une dose ou administrer, non — signalez à l'infirmier.",
+      },
+      {
+        promptEn: "A client refuses their medication, so you should hide it in their food to make sure they take it.",
+        promptFr: "Un client refuse son médicament, alors vous devriez le cacher dans sa nourriture pour être sûr qu'il le prenne.",
+        type: "TRUE_FALSE",
+        choicesEn: ["True", "False"],
+        choicesFr: ["Vrai", "Faux"],
+        correctIdx: [1],
+        explainEn:
+          "Covert medication is not your decision and can be unsafe and unethical. Respect the refusal and report it to the nurse/supervisor.",
+        explainFr:
+          "La médication dissimulée n'est pas votre décision et peut être dangereuse et contraire à l'éthique. Respectez le refus et signalez-le à l'infirmier/superviseur.",
+      },
+      {
+        promptEn: "You should report to the nurse or supervisor when: (Select all that apply)",
+        promptFr: "Vous devez aviser l'infirmier ou le superviseur lorsque : (Sélectionnez tout ce qui s'applique)",
+        type: "MULTIPLE",
+        choicesEn: [
+          "A dose was missed or refused",
+          "The client seems confused or unwell after a medication",
+          "Pills are unexpectedly left over",
+          "The client took their medication as planned with no issues",
+        ],
+        choicesFr: [
+          "Une dose a été manquée ou refusée",
+          "Le client semble confus ou souffrant après un médicament",
+          "Il reste des comprimés de façon inattendue",
+          "Le client a pris son médicament comme prévu, sans problème",
+        ],
+        correctIdx: [0, 1, 2],
+        explainEn: "Missed/refused doses, new symptoms, and unexpected leftovers all need reporting; a normal dose taken as planned does not.",
+        explainFr: "Les doses manquées/refusées, les nouveaux symptômes et les restes inattendus doivent être signalés; une dose normale prise comme prévu, non.",
+      },
+      {
+        promptEn: "You notice a medication container with no label and an expired date. You should:",
+        promptFr: "Vous remarquez un contenant de médicament sans étiquette et dont la date est expirée. Vous devriez :",
+        choicesEn: [
+          "Give it anyway if it looks familiar",
+          "Not give it and report it to the nurse/supervisor",
+          "Throw it out yourself right away",
+          "Guess the correct dose",
+        ],
+        choicesFr: [
+          "Le donner quand même s'il semble familier",
+          "Ne pas le donner et le signaler à l'infirmier/superviseur",
+          "Le jeter vous-même immédiatement",
+          "Deviner la bonne dose",
+        ],
+        correctIdx: [1],
+        explainEn: "Never support an unlabelled or expired medication. Do not give it and report it — the nurse decides next steps.",
+        explainFr: "Ne soutenez jamais un médicament non étiqueté ou expiré. Ne le donnez pas et signalez-le — l'infirmier décide de la suite.",
+      },
+    ],
+  },
+
+  // ── 10. Recognizing & Reporting Abuse and Neglect ────────────────────
+  {
+    slug: "recognizing-reporting-abuse",
+    titleEn: "Recognizing & Reporting Abuse and Neglect",
+    titleFr: "Reconnaître et signaler la maltraitance et la négligence",
+    descriptionEn:
+      "Recognizing the signs of abuse or neglect of an adult client, understanding your responsibility to report per policy, and responding safely and respectfully.",
+    descriptionFr:
+      "Reconnaître les signes de maltraitance ou de négligence envers un client adulte, comprendre votre responsabilité de signalement selon la politique et réagir de façon sécuritaire et respectueuse.",
+    durationMin: 25,
+    passMark: 80,
+    lessons: [
+      { titleEn: "Types and signs of abuse and neglect", titleFr: "Types et signes de maltraitance et de négligence" },
+      { titleEn: "Self-neglect and financial abuse", titleFr: "L'autonégligence et l'exploitation financière" },
+      { titleEn: "Your responsibility to report", titleFr: "Votre responsabilité de signalement" },
+      { titleEn: "Responding safely and respectfully", titleFr: "Réagir de façon sécuritaire et respectueuse" },
+    ],
+    questions: [
+      {
+        promptEn: "Possible signs of abuse or neglect include: (Select all that apply)",
+        promptFr: "Les signes possibles de maltraitance ou de négligence comprennent : (Sélectionnez tout ce qui s'applique)",
+        type: "MULTIPLE",
+        choicesEn: [
+          "Unexplained bruises or injuries",
+          "Sudden fear around a particular person",
+          "A clean home and stable weight",
+          "Poor hygiene, weight loss, or unmet basic needs",
+        ],
+        choicesFr: [
+          "Des ecchymoses ou blessures inexpliquées",
+          "Une peur soudaine en présence d'une personne en particulier",
+          "Un domicile propre et un poids stable",
+          "Une mauvaise hygiène, une perte de poids ou des besoins de base non comblés",
+        ],
+        correctIdx: [0, 1, 3],
+        explainEn: "Unexplained injuries, fear of a person, and neglect signs are red flags; a clean home and stable weight are not.",
+        explainFr: "Blessures inexpliquées, peur d'une personne et signes de négligence sont des signaux d'alarme; un domicile propre et un poids stable ne le sont pas.",
+      },
+      {
+        promptEn: "You suspect a client is being financially exploited by a relative. You should:",
+        promptFr: "Vous soupçonnez qu'un client est exploité financièrement par un proche. Vous devriez :",
+        choicesEn: [
+          "Confront the relative directly",
+          "Keep it to yourself to avoid conflict",
+          "Document your objective observations and report to your supervisor per agency / adult-protection policy",
+          "Offer to lend the client money",
+        ],
+        choicesFr: [
+          "Confronter le proche directement",
+          "Le garder pour vous afin d'éviter un conflit",
+          "Documenter vos observations objectives et le signaler à votre superviseur selon la politique de l'agence / de protection des adultes",
+          "Proposer de prêter de l'argent au client",
+        ],
+        correctIdx: [2],
+        explainEn:
+          "Do not investigate or confront. Record objective observations and report through your agency's channels.",
+        explainFr:
+          "N'enquêtez pas et ne confrontez pas. Consignez des observations objectives et signalez par les voies de votre agence.",
+      },
+      {
+        promptEn: "You only need to report abuse if you are completely certain it is happening.",
+        promptFr: "Vous ne devez signaler la maltraitance que si vous en êtes absolument certain.",
+        type: "TRUE_FALSE",
+        choicesEn: ["True", "False"],
+        choicesFr: ["Vrai", "Faux"],
+        correctIdx: [1],
+        explainEn:
+          "You report a reasonable suspicion — you do not have to prove it. Report objective observations promptly per policy.",
+        explainFr:
+          "Vous signalez un soupçon raisonnable — vous n'avez pas à le prouver. Signalez rapidement des observations objectives selon la politique.",
+      },
+      {
+        promptEn: "A client discloses that a family member hit them. Your first response should be to:",
+        promptFr: "Un client vous confie qu'un membre de sa famille l'a frappé. Votre première réaction devrait être de :",
+        choicesEn: [
+          "Promise to keep it a secret",
+          "Listen supportively, make sure they are safe right now, and report per policy",
+          "Tell other clients about it",
+          "Treat it as a private family matter and do nothing",
+        ],
+        choicesFr: [
+          "Promettre de garder le secret",
+          "Écouter avec soutien, vous assurer de sa sécurité immédiate et signaler selon la politique",
+          "En parler à d'autres clients",
+          "Considérer cela comme une affaire familiale privée et ne rien faire",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Listen without judging, ensure immediate safety, do not promise secrecy, and report through the proper channels.",
+        explainFr:
+          "Écoutez sans juger, assurez la sécurité immédiate, ne promettez pas le secret et signalez par les voies appropriées.",
+      },
+    ],
+  },
+
+  // ── 11. Working in the Client's Home: Boundaries, Family & Pets ───────
+  {
+    slug: "working-in-client-home-boundaries",
+    titleEn: "Working in the Client's Home: Boundaries, Family & Pets",
+    titleFr: "Travailler au domicile du client : limites, famille et animaux",
+    descriptionEn:
+      "Maintaining professional boundaries as a guest in someone's home — gifts and money, family dynamics, pets, and keeping the relationship therapeutic.",
+    descriptionFr:
+      "Maintenir des limites professionnelles en tant qu'invité au domicile — cadeaux et argent, dynamique familiale, animaux et maintien d'une relation thérapeutique.",
+    durationMin: 25,
+    passMark: 80,
+    lessons: [
+      { titleEn: "Professional boundaries as a guest", titleFr: "Les limites professionnelles en tant qu'invité" },
+      { titleEn: "Gifts, money, and dual relationships", titleFr: "Cadeaux, argent et relations doubles" },
+      { titleEn: "Working alongside family", titleFr: "Travailler avec la famille" },
+      { titleEn: "Pets and household realities", titleFr: "Animaux et réalités du foyer" },
+    ],
+    questions: [
+      {
+        promptEn: "A client offers you a large cash tip. You should:",
+        promptFr: "Un client vous offre un généreux pourboire en argent. Vous devriez :",
+        choicesEn: [
+          "Accept it — refusing would be rude",
+          "Politely decline, explain your agency's policy, and report the offer if required",
+          "Accept it just this once",
+          "Ask whether they could give more",
+        ],
+        choicesFr: [
+          "L'accepter — refuser serait impoli",
+          "Refuser poliment, expliquer la politique de votre agence et signaler l'offre au besoin",
+          "L'accepter juste cette fois",
+          "Demander s'ils pourraient donner plus",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "Accepting gifts or money blurs professional boundaries and may breach policy. Decline politely and follow your agency's rules.",
+        explainFr:
+          "Accepter des cadeaux ou de l'argent brouille les limites professionnelles et peut enfreindre la politique. Refusez poliment et suivez les règles de votre agence.",
+      },
+      {
+        promptEn: "Running personal errands with your own money for a client, outside the care plan, is a good way to build trust.",
+        promptFr: "Faire des courses personnelles avec votre propre argent pour un client, en dehors du plan de soins, est une bonne façon de bâtir la confiance.",
+        type: "TRUE_FALSE",
+        choicesEn: ["True", "False"],
+        choicesFr: ["Vrai", "Faux"],
+        correctIdx: [1],
+        explainEn:
+          "Crossing role and financial boundaries creates risk and dependency. Stay within the care plan and agency policy.",
+        explainFr:
+          "Franchir les limites de rôle et financières crée des risques et de la dépendance. Restez dans les limites du plan de soins et de la politique de l'agence.",
+      },
+      {
+        promptEn: "Maintaining professional boundaries includes: (Select all that apply)",
+        promptFr: "Maintenir des limites professionnelles comprend : (Sélectionnez tout ce qui s'applique)",
+        type: "MULTIPLE",
+        choicesEn: [
+          "Keeping the focus on the client's care plan",
+          "Not sharing your personal financial problems with the client",
+          "Not giving out your home address or lending money",
+          "Adding the client to all your personal social media",
+        ],
+        choicesFr: [
+          "Garder l'accent sur le plan de soins du client",
+          "Ne pas partager vos problèmes financiers personnels avec le client",
+          "Ne pas donner votre adresse personnelle ni prêter d'argent",
+          "Ajouter le client à tous vos réseaux sociaux personnels",
+        ],
+        correctIdx: [0, 1, 2],
+        explainEn: "Keep the relationship therapeutic and focused on care; blending it with your personal life crosses boundaries.",
+        explainFr: "Gardez la relation thérapeutique et centrée sur les soins; la mêler à votre vie personnelle franchit les limites.",
+      },
+      {
+        promptEn: "A client's friendly dog keeps jumping up and getting underfoot during transfers. Best practice is to:",
+        promptFr: "Le chien amical d'un client saute sans cesse et se met dans vos jambes durant les transferts. La meilleure pratique est de :",
+        choicesEn: [
+          "Ignore it and continue",
+          "Ask the client or family to secure the pet during care tasks, for everyone's safety",
+          "Bring a treat to distract it every visit",
+          "Refuse to care for clients who have pets",
+        ],
+        choicesFr: [
+          "L'ignorer et continuer",
+          "Demander au client ou à la famille de garder l'animal à l'écart durant les tâches de soins, pour la sécurité de tous",
+          "Apporter une gâterie pour le distraire à chaque visite",
+          "Refuser de soigner les clients ayant des animaux",
+        ],
+        correctIdx: [1],
+        explainEn:
+          "A pet underfoot during a transfer is a fall risk for both of you. Ask that it be secured during care tasks.",
+        explainFr:
+          "Un animal dans les jambes durant un transfert est un risque de chute pour vous deux. Demandez qu'il soit gardé à l'écart durant les tâches de soins.",
+      },
+    ],
+  },
 ];

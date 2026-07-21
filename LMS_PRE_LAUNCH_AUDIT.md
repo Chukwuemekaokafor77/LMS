@@ -215,6 +215,15 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-21_ — **Home-care starter library expanded 6 → 11 modules** (Phase B
+  content, still starter/example — SME review required before any "compliance"
+  claim; not provincially mandated). Added 5 bilingual best-practice modules as
+  global seed data (`seed:homecare`): Safe Lifting & Client Handling, Dementia &
+  Responsive Behaviours, Medication Support in the Home, Recognizing & Reporting
+  Abuse and Neglect, and Working in the Client's Home (Boundaries/Family/Pets).
+  Library is now 43 lessons + 41 EN/FR quiz questions; seed re-run clean and
+  spot-checked in the DB (global, bilingual parity, valid answer keys). Lesson
+  videos remain BYO. No schema/code change — seed data only.
 - _2026-07-21_ — **Entitlement-lapse webhook shipped (Phase-D follow-up; both
   repos, merged).** Closes the mid-session window the SSO-time entitlement gate
   left open. Academy (LMS PR #35): new `Entitlement` model (1:1 Organization,
