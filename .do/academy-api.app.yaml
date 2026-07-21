@@ -23,6 +23,13 @@
 name: academy-api
 region: tor1
 
+# Top-level domains (a single-service app routes them to that service). The API
+# gets its own hostname because its routes live at root (/me, /auth/sso,
+# /webhooks/...); ElderCare's entitlement webhook + the web app's SSR target it.
+domains:
+  - domain: api.academy.eldercare-companion.com
+    type: PRIMARY
+
 # Run pending Prisma migrations before each deploy goes live.
 jobs:
   - name: migrate
@@ -53,12 +60,6 @@ services:
     instance_size_slug: apps-s-1vcpu-1gb
     health_check:
       http_path: /health
-    # Bind the API to its own hostname (its routes live at root: /me, /auth/sso,
-    # /webhooks/...). ElderCare's entitlement webhook + the web app's SSR calls
-    # target this host.
-    domains:
-      - domain: api.academy.eldercare-companion.com
-        type: PRIMARY
     envs:
       - key: NODE_ENV
         value: production

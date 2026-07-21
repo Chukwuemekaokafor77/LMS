@@ -12,6 +12,11 @@
 name: academy-web
 region: tor1
 
+# Top-level domains (single-service app routes them to that service).
+domains:
+  - domain: academy.eldercare-companion.com
+    type: PRIMARY
+
 services:
   - name: web
     dockerfile_path: apps/web/Dockerfile
@@ -23,9 +28,6 @@ services:
     http_port: 3000
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-1gb
-    domains:
-      - domain: academy.eldercare-companion.com
-        type: PRIMARY
     envs:
       - key: NODE_ENV
         value: production
