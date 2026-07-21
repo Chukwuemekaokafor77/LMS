@@ -464,6 +464,17 @@ restores them on reactivation. Original design notes retained below.
   list shows it with the right expiry → the renewal reminder fires on schedule.
 
 ### Phase E — Go-live hardening  ⬜ **the only remaining phase (deployment/ops)**
+
+> **Go-live kit prepared 2026-07-21 — see [docs/PHASE_E_GO_LIVE.md](docs/PHASE_E_GO_LIVE.md).**
+> The codeable half of items 1–4 is done (runbooks, DO App Platform specs,
+> backup/restore scripts, verification checklist + a signed exchange probe); the
+> owner-supplied half (real keys, cloud/DNS, live runs) is checklisted there.
+> **Two findings:** (a) **residency resolved → DigitalOcean App Platform TOR1**
+> (ElderCare's actual host — off Render, not AWS); (b) the **"exchange 504" is
+> not a bug** — it's a Cloudflare-masked origin **503 "Academy is not configured"**
+> because `ACADEMY_EXCHANGE_SECRET` is unset on ElderCare prod; setting it (item 2
+> wiring) fixes it.
+
 - **LMS-M1 secrets rotation** (the only open audit finding): Mux, AWS, Resend +
   the two Academy secrets (`ACADEMY_EXCHANGE_SECRET` shared with ElderCare,
   `ACADEMY_SESSION_SECRET`). Clerk keys are deleted, not rotated.
