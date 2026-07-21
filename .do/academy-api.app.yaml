@@ -1,0 +1,126 @@
+# DigitalOcean App Platform spec — ElderCare Academy API (NestJS + BullMQ).
+#
+# Region tor1 (Toronto) → Canadian data residency, mirroring ElderCare
+# (which runs on DO App Platform TOR1 — see docs/DEPLOY_ACADEMY.md §1 for the
+# residency decision). The BullMQ processors run IN-PROCESS inside the API
+# (they are Nest providers), so no separate worker component is needed.
+#
+# This is a STARTING POINT — finalize cluster names, instance sizes, and the
+# custom domain in the DO dashboard. Secrets (type: SECRET, no value here) must
+# be set via the dashboard or `doctl apps update` — never committed.
+#
+#   doctl apps create --spec .do/academy-api.app.yaml
+#
+name: academy-api
+region: tor1
+
+databases:
+  # Attach existing managed clusters (create them first, TOR1). DO injects the
+  # connection strings referenced below. Migrations use the DIRECT connection
+  # (not a transaction-mode pool) — see the PRE_DEPLOY job note.
+  - name: academy-db
+    engine: PG
+    production: true
+    cluster_name: academy-pg-prod
+  - name: academy-redis
+    engine: REDIS
+    production: true
+    cluster_name: academy-redis-prod
+
+# Run pending Prisma migrations before each deploy goes live.
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    dockerfile_path: apps/api/Dockerfile
+    source_dir: /
+    github:
+      repo: Chukwuemekaokafor77/LMS
+      branch: main
+    run_command: node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${academy-db.DATABASE_URL}
+
+services:
+  - name: api
+    dockerfile_path: apps/api/Dockerfile
+    source_dir: /
+    github:
+      repo: Chukwuemekaokafor77/LMS
+      branch: main
+      deploy_on_push: true
+    http_port: 4000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    health_check:
+      http_path: /health
+    # Bind the API to its own hostname (its routes live at root: /me, /auth/sso,
+    # /webhooks/...). ElderCare's entitlement webhook + the web app's SSR calls
+    # target this host.
+    domains:
+      - domain: api.academy.eldercare-companion.com
+        type: PRIMARY
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: "4000"
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${academy-db.DATABASE_URL}
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${academy-redis.DATABASE_URL}
+      - key: WEB_BASE_URL
+        scope: RUN_TIME
+        value: https://academy.eldercare-companion.com
+
+      # --- ElderCare integration (Seam 1 exchange, Seam 3 flow-back, entitlement) ---
+      - key: ELDERCARE_API_URL
+        scope: RUN_TIME
+        value: https://api.eldercare-companion.com
+      - key: ACADEMY_EXCHANGE_SECRET   # shared HMAC secret — MUST equal ElderCare's ACADEMY_EXCHANGE_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: ACADEMY_SESSION_SECRET    # signs the Academy's own 8h session cookies
+        scope: RUN_TIME
+        type: SECRET
+
+      # --- Mux (video) ---
+      - key: MUX_TOKEN_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: MUX_TOKEN_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: MUX_WEBHOOK_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: MUX_SIGNING_KEY_ID
+        scope: RUN_TIME
+        type: SECRET
+
+      # --- Object storage (S3-compatible; DO Spaces TOR1 keeps files in Canada) ---
+      - key: AWS_REGION
+        value: ca-central-1            # for AWS S3; for DO Spaces use e.g. tor1 + AWS_ENDPOINT_URL_S3
+      - key: AWS_S3_BUCKET
+        scope: RUN_TIME
+        value: academy-uploads-prod
+      - key: AWS_ACCESS_KEY_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: AWS_SECRET_ACCESS_KEY
+        scope: RUN_TIME
+        type: SECRET
+      # - key: AWS_ENDPOINT_URL_S3       # set only for DO Spaces, e.g. https://tor1.digitaloceanspaces.com
+      #   scope: RUN_TIME
+      #   value: https://tor1.digitaloceanspaces.com
+
+      # --- Email (Resend) ---
+      - key: RESEND_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: EMAIL_FROM
+        scope: RUN_TIME
+        value: no-reply@academy.eldercare-companion.com

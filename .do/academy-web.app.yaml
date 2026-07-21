@@ -1,0 +1,42 @@
+# DigitalOcean App Platform spec — ElderCare Academy web (Next.js 15, standalone).
+#
+# Region tor1 (Toronto). The web app is SSR — server components render PHI during
+# the request and forward the session cookie as a bearer to the API — so it must
+# run in Canada too (not a US-only serverless edge). See docs/DEPLOY_ACADEMY.md §1.
+#
+# NEXT_PUBLIC_* are baked at BUILD time (Next.js inlines them), so they are
+# BUILD_TIME scope. API_BASE_URL is read at request time (SSR fetch), RUN_TIME.
+#
+#   doctl apps create --spec .do/academy-web.app.yaml
+#
+name: academy-web
+region: tor1
+
+services:
+  - name: web
+    dockerfile_path: apps/web/Dockerfile
+    source_dir: /
+    github:
+      repo: Chukwuemekaokafor77/LMS
+      branch: main
+      deploy_on_push: true
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    domains:
+      - domain: academy.eldercare-companion.com
+        type: PRIMARY
+    envs:
+      - key: NODE_ENV
+        value: production
+      # Server-side (SSR) calls to the Academy API:
+      - key: API_BASE_URL
+        scope: RUN_TIME
+        value: https://api.academy.eldercare-companion.com
+      # Baked into the client bundle at build time:
+      - key: NEXT_PUBLIC_API_URL
+        scope: BUILD_TIME
+        value: https://api.academy.eldercare-companion.com
+      - key: NEXT_PUBLIC_ELDERCARE_APP_URL   # where signed-out visitors are sent (ElderCare "Training" entry)
+        scope: BUILD_TIME
+        value: https://app.eldercare-companion.com
