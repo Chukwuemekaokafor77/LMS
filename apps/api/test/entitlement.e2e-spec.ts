@@ -74,12 +74,25 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await drainQueues();
+  // Full FK-safe cascade — the suite shares one DB serially, so prior specs'
+  // rows (assignments referencing staff, etc.) must be cleared before staff.
   await db.recordAccessLog.deleteMany({});
   await db.auditEvent.deleteMany({});
+  await db.lessonProgress.deleteMany({});
+  await db.invitation.deleteMany({});
+  await db.certificate.deleteMany({});
+  await db.attempt.deleteMany({});
+  await db.assignment.deleteMany({});
+  await db.rosterImport.deleteMany({});
+  await db.question.deleteMany({});
+  await db.quiz.deleteMany({});
+  await db.lesson.deleteMany({});
+  await db.requiredTraining.deleteMany({});
   await db.staff.deleteMany({});
   await db.entitlement.deleteMany({});
-  await db.user.deleteMany({});
   await db.site.deleteMany({});
+  await db.module.deleteMany({});
+  await db.user.deleteMany({});
   await db.organization.deleteMany({});
   await db.role.deleteMany({});
 });
