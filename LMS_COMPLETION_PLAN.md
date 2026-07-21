@@ -255,7 +255,7 @@ but it is not planned.
 > | A — learning experience | ✅ done | [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md) |
 > | B — content catalog | 🟡 partial | authoring UI + library-promote built; 6-module bilingual **starter library** seeded (`seed:homecare`). **Remaining:** SME review before "compliance" use; more modules; per-province role rows / policy sets |
 > | C — remove Clerk / federate | ✅ done | LMS-M6 complete: ElderCare Academy handoff SSO, Clerk deleted end-to-end (API + web), identity in ca-central-1 |
-> | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) |
+> | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) **and mid-session** (2026-07-21 entitlement-lapse webhook, both repos — bullet 5 below) |
 > | E — go-live hardening | ⬜ remaining | see the Phase E checklist below — deployment/ops, needs owner decisions |
 >
 > **What remains to launch (the close-out list):**
@@ -269,9 +269,17 @@ but it is not planned.
 > 4. **Real-provider verification** the local stack can't do: Mux upload→webhook
 >    →playback with real keys; Resend prod email; and the SSO + flow-back driven
 >    against the *real* ElderCare deployment (not the local mocks used so far).
-> 5. **Entitlement lapse webhook (optional, Phase D follow-up):** claims-at-SSO
+> 5. ~~**Entitlement lapse webhook (optional, Phase D follow-up):** claims-at-SSO
 >    covers login; an ElderCare→Academy webhook would close the mid-session
->    window. Not required for a pilot.
+>    window. Not required for a pilot.~~ **✅ DONE 2026-07-21 (both repos).**
+>    Academy: an `Entitlement` row (SSO writes the baseline) + `POST
+>    /webhooks/eldercare/entitlement` (HMAC service auth, idempotent on
+>    `event_id`, ordered by `event_at`) + a mid-session 403 in the auth guard
+>    when the row is non-active (absent row = no block; SSO already gated).
+>    ElderCare (`psw`): `academy_notify.push_entitlement` fires on every Stripe
+>    billing transition + cancel (best-effort; the Academy is idempotent and
+>    still gates at next SSO). Mirrors the Phase-D HMAC pattern in reverse.
+>    Merged LMS PR #35 / psw PR #219.
 > 6. **Content (Phase B):** SME review of the starter library; author remaining
 >    modules; bilingual fr-CA QA; AODA/WCAG 2.1 AA pass (ON expansion).
 
@@ -431,8 +439,11 @@ retry+backoff, idempotent on certificate id), which upserts a **verified, expiri
 `StaffCertification`** — feeding ElderCare's existing credential-expiry reminders
 (no new tracking feature; the models already matched the Seam-3 table). Entitlement
 is enforced **at SSO from the exchange claims** (active/trialing → in; lapsed →
-403). The mid-session lapse webhook (bullet 1 below) is the one deferred, optional
-follow-up. Original design notes retained below.
+403) **and mid-session** — the entitlement-lapse webhook shipped 2026-07-21 (both
+repos): ElderCare's `academy_notify.push_entitlement` fires on every billing
+transition → the Academy's `POST /webhooks/eldercare/entitlement` upserts an
+`Entitlement` row → the auth guard blocks the org's live sessions on lapse and
+restores them on reactivation. Original design notes retained below.
 
 **Gate:** an authenticated service channel between the two apps (falls out of Phase C).
 - **Entitlement flow-in (added 2026-07-18, replaces LMS billing):** the same
