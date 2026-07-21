@@ -253,7 +253,7 @@ but it is not planned.
 > | Phase | State | Evidence |
 > |---|---|---|
 > | A — learning experience | ✅ done | [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md) |
-> | B — content catalog | 🟡 partial | authoring UI + library-promote built; 6-module bilingual **starter library** seeded (`seed:homecare`). **Remaining:** SME review before "compliance" use; more modules; per-province role rows / policy sets |
+> | B — content catalog | 🟡 partial | authoring UI + library-promote built; **11-module** bilingual **starter library** seeded (`seed:homecare`, 43 lessons / 41 quiz Qs). **Remaining:** SME review before "compliance" use; more modules; per-province role rows / policy sets |
 > | C — remove Clerk / federate | ✅ done | LMS-M6 complete: ElderCare Academy handoff SSO, Clerk deleted end-to-end (API + web), identity in ca-central-1 |
 > | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) **and mid-session** (2026-07-21 entitlement-lapse webhook, both repos — bullet 5 below) |
 > | E — go-live hardening | ⬜ remaining | see the Phase E checklist below — deployment/ops, needs owner decisions |
@@ -326,13 +326,16 @@ Module ids survive the round-trip, so assignments keep working.
 **Content model (owner decision 2026-07-20): BYO-first.** Agencies add their
 own content/materials via the authoring UI; a licensed catalog can be added
 post-revenue. A **home-care STARTER LIBRARY** ships as global modules (seed:
-`pnpm --filter @maple-care/api run seed:homecare`) — 6 bilingual best-practice
-modules (Home Support Fundamentals, Lone-Worker Safety, IPAC in the Home, Falls
-Prevention in the Home, Privacy & Confidentiality, Safe Travel Between Clients),
-23 lessons + 21 EN/FR quiz questions. **Starter/example only — SME review
-required before use as compliance; not marketed as provincially mandated** (see
-§B0). Lesson videos remain BYO. Remaining Phase B work: SME review of the
-starter content, more modules, per-province role rows / policy sets.
+`pnpm --filter @maple-care/api run seed:homecare`) — **11** bilingual
+best-practice modules (Home Support Fundamentals, Lone-Worker Safety, IPAC in
+the Home, Falls Prevention in the Home, Privacy & Confidentiality, Safe Travel
+Between Clients, Safe Lifting & Client Handling, Dementia & Responsive
+Behaviours, Medication Support in the Home, Recognizing & Reporting Abuse and
+Neglect, Working in the Client's Home: Boundaries/Family/Pets), **43 lessons +
+41 EN/FR quiz questions** (expanded from 6/23/21 on 2026-07-21). **Starter/example
+only — SME review required before use as compliance; not marketed as provincially
+mandated** (see §B0). Lesson videos remain BYO. Remaining Phase B work: SME review
+of the starter content, more modules, per-province role rows / policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
