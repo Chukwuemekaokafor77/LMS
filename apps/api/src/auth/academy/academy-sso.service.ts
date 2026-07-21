@@ -11,9 +11,7 @@ import { runAsSystem } from "../../tenant/tenant-context";
 import { AcademyExchangeClient, type EldercareClaims } from "./academy-exchange.client";
 import { AcademySessionService } from "./academy-session.service";
 import { mapEldercareRole, mapProvince } from "./eldercare-role-map";
-
-/** ElderCare subscription states that grant Academy access. */
-const ACTIVE_ENTITLEMENTS = new Set(["active", "trialing"]);
+import { isEntitlementActive } from "../../integrations/entitlement-status";
 
 const LOCALE_MAP: Record<string, string> = { fr: "fr-CA", en: "en-CA" };
 
@@ -43,7 +41,7 @@ export class AcademySsoService {
       throw new BadRequestException("Invalid or expired sign-in link");
     }
 
-    if (!ACTIVE_ENTITLEMENTS.has(claims.entitlement?.status ?? "")) {
+    if (!isEntitlementActive(claims.entitlement?.status)) {
       throw new ForbiddenException(
         "Your agency's ElderCare subscription is not active",
       );
@@ -96,6 +94,22 @@ export class AcademySsoService {
         preferredLocale: orgLocale,
       },
       update: { name: claims.org.name },
+    });
+
+    // Persist the entitlement baseline so the auth guard has a row to enforce
+    // mid-session. `lastEventAt` is deliberately left untouched here (login is
+    // not a webhook event), so a subsequent ElderCare webhook always applies.
+    await this.prisma.entitlement.upsert({
+      where: { orgId: org.id },
+      create: {
+        orgId: org.id,
+        status: claims.entitlement.status,
+        seats: claims.entitlement.seats,
+      },
+      update: {
+        status: claims.entitlement.status,
+        seats: claims.entitlement.seats,
+      },
     });
 
     let siteId: string | null = null;

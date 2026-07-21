@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -17,6 +18,7 @@ import { IS_PUBLIC_KEY } from "./public.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import type { StaffContext } from "../tenant/tenant.types";
 import { runAsSystem, setOrgContext } from "../tenant/tenant-context";
+import { isEntitlementActive } from "../integrations/entitlement-status";
 
 export type AuthedRequest = Request & {
   auth?: { externalAuthId: string; sessionId?: string };
@@ -69,10 +71,29 @@ export class AuthGuard implements CanActivate {
       async () =>
         await this.prisma.staff.findUnique({
           where: { userId: user.id },
-          include: { org: { select: { jurisdiction: true } } },
+          include: {
+            org: {
+              select: {
+                jurisdiction: true,
+                entitlement: { select: { status: true } },
+              },
+            },
+          },
         }),
     );
     if (staff) {
+      // Mid-session entitlement enforcement (Phase-D follow-up). SSO gates at
+      // login; the ElderCare webhook updates `Entitlement` afterwards, and this
+      // is where a lapse takes effect for the rest of the org's live sessions.
+      // A missing row (org provisioned before this feature, or never fed) is
+      // *not* a block — access already passed the SSO gate; only an explicit
+      // non-active status blocks.
+      const entStatus = staff.org.entitlement?.status;
+      if (entStatus !== undefined && !isEntitlementActive(entStatus)) {
+        throw new ForbiddenException(
+          "Your agency's ElderCare subscription is no longer active",
+        );
+      }
       req.staff = {
         staffId: staff.id,
         userId: staff.userId,

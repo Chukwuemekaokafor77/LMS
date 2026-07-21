@@ -100,8 +100,30 @@ model Organization {
   certificates      Certificate[]
   lessonProgress    LessonProgress[]
   invitations       Invitation[]
+  entitlement       Entitlement?
 
   @@index([jurisdiction])
+}
+
+/// ElderCare-fed subscription state (the LMS is an ElderCare-entitled product —
+/// no LMS billing). Enforced at SSO from the exchange claims and, mid-session,
+/// by the auth guard reading `status` here. Kept current by ElderCare's
+/// `POST /webhooks/eldercare/entitlement` (HMAC service auth, mirrors Seam 3).
+/// Not a PHI model — org-config, so it is *not* in the tenant-isolation
+/// guardrail's PHI_MODELS set; every access passes an explicit orgId.
+model Entitlement {
+  id           String       @id @default(cuid())
+  orgId        String       @unique
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  /// ElderCare subscription state: "active" | "trialing" | "past_due" |
+  /// "canceled" | ... — the active set (see entitlement-status.ts) grants access.
+  status       String
+  seats        Int?
+  /// Idempotency (dedupe replays) + ordering (drop stale out-of-order events).
+  lastEventId  String?
+  lastEventAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Site {
