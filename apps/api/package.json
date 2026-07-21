@@ -13,7 +13,8 @@
     "test:e2e": "vitest run --config vitest.config.ts test/",
     "seed": "ts-node prisma/seed.ts",
     "s3:setup": "bash ../../scripts/setup-s3.sh",
-    "library:promote": "ts-node scripts/promote-module.ts"
+    "library:promote": "ts-node scripts/promote-module.ts",
+    "seed:homecare": "ts-node prisma/seed-home-care.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.692.0",
