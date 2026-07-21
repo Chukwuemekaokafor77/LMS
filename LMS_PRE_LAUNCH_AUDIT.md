@@ -215,6 +215,20 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-21_ — **Entitlement-lapse webhook shipped (Phase-D follow-up; both
+  repos, merged).** Closes the mid-session window the SSO-time entitlement gate
+  left open. Academy (LMS PR #35): new `Entitlement` model (1:1 Organization,
+  non-PHI — deliberately *not* in the tenant-isolation guardrail's PHI_MODELS
+  set; every access passes an explicit orgId), inbound `POST
+  /webhooks/eldercare/entitlement` (HMAC service auth via a new `verifyServiceHmac`
+  — the shared `ACADEMY_EXCHANGE_SECRET`; idempotent on `event_id`, ordered by
+  `event_at`), the auth guard now reads `org.entitlement` and 403s a non-active
+  org mid-session (absent row = no block — SSO already gated), and SSO writes the
+  baseline. ElderCare (`psw` PR #219): `academy_notify.push_entitlement` fires on
+  every Stripe billing transition + cancel (best-effort; never breaks billing).
+  Mirrors the Phase-D certificate-flow-back HMAC pattern in reverse. C1/C2 +
+  drift gate green; new `entitlement.e2e-spec`; psw ruff/black/mypy/pytest green.
+  **No new open audit findings — LMS-M1 remains the only one.**
 - _2026-07-20_ — **Phase D done + Phase B started; sprint closed.** Certificate
   flow-back (Seam 3) live both repos: on `certificate.issued` the Academy pushes
   a verified, expiring `StaffCertification` to ElderCare's `POST
