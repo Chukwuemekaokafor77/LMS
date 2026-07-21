@@ -39,22 +39,40 @@ so it gets its own hostname rather than a path prefix under the web app):
 | `academy-web` | [.do/academy-web.app.yaml](../.do/academy-web.app.yaml) | `academy.eldercare-companion.com` | Next.js standalone; SSR forwards the session cookie as bearer |
 | `academy-api` | [.do/academy-api.app.yaml](../.do/academy-api.app.yaml) | `api.academy.eldercare-companion.com` | NestJS + in-process BullMQ workers; owns PG + Redis + a PRE_DEPLOY migration job |
 
-## 3. One-time provisioning (you)
+## 3. One-time provisioning (you) — cost-minimised, no-AWS
 
-1. **Managed clusters** (DO → Databases, region **TOR1**):
-   - Postgres 16 → `academy-pg-prod`
-   - Valkey/Redis → `academy-redis-prod`
-   - Add both apps to each cluster's **Trusted Sources**.
-2. **Object storage** — DO Spaces bucket `academy-uploads-prod` (TOR1) + a
-   bucket-scoped access key; or an AWS S3 ca-central-1 bucket (`scripts/setup-s3.sh`
-   documents the bucket/CORS setup). Set `AWS_ENDPOINT_URL_S3` for Spaces.
-3. **DNS** (Namecheap, matching ElderCare's pattern): CNAME
-   `academy` and `api.academy` → the two DO apps' `*.ondigitalocean.app` targets
-   (DO shows the target after the app is created).
-4. **Secrets** — generate/collect the real values (see
+To avoid a second database bill and any AWS footprint, reuse ElderCare's
+existing DO infrastructure and use DO Spaces for files. Everything stays TOR1.
+
+1. **Database — reuse the existing cluster.** DO → Databases →
+   `eldercare-pg-prod` → **Users & Databases** → add database `academy` (and,
+   optionally, a dedicated user `academy_app`). This is a separate database on
+   the same cluster — **no new cluster cost**, still TOR1. Copy its **pooled**
+   connection string → the app's `DATABASE_URL`, and the **direct** (port 25060)
+   string → the migrate job's `DATABASE_URL`.
+2. **Cache/queue — reuse the existing Valkey.** `eldercare-redis-prod` →
+   connection string → the app's `REDIS_URL`. BullMQ namespaces its own keys, so
+   it coexists with ElderCare's usage.
+3. **Trusted Sources** — make sure the `academy-api` app is allowed on both
+   clusters (DB cluster → Settings → Trusted Sources → add the app).
+4. **Object storage — DO Spaces (no AWS).** Create a Space `academy-uploads-prod`
+   in **TOR1**, set it **Private**. Spaces → **Access Keys** → generate a key →
+   `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. The spec already sets
+   `AWS_ENDPOINT_URL_S3=https://tor1.digitaloceanspaces.com` so the S3 client
+   talks to Spaces with no code change.
+5. **DNS**: CNAME `academy` and `api.academy` → the two DO apps'
+   `*.ondigitalocean.app` targets (shown after each app is created). If you proxy
+   through Cloudflare like the ElderCare API, add them there with SSL **Full**.
+6. **Secrets** — generate/collect the values (see
    [SECRETS_ROTATION_RUNBOOK.md](SECRETS_ROTATION_RUNBOOK.md)) and set them on the
    `academy-api` app as encrypted env vars. `ACADEMY_EXCHANGE_SECRET` **must be
-   byte-identical** to ElderCare's `ACADEMY_EXCHANGE_SECRET`.
+   byte-identical** to ElderCare's. **Email:** leave `RESEND_API_KEY` unset for
+   launch — the Academy sender no-ops and ElderCare sends training-expiry
+   reminders via the cert flow-back.
+
+> **Trade-off of the shared cluster:** the two products share the DB's connection
+> limit and CPU. Fine at pilot scale; move `academy` to its own small cluster
+> (~$15/mo) if load grows. Data is isolated at the database level.
 
 ## 4. Deploy
 

@@ -1,31 +1,27 @@
 # DigitalOcean App Platform spec — ElderCare Academy API (NestJS + BullMQ).
 #
-# Region tor1 (Toronto) → Canadian data residency, mirroring ElderCare
-# (which runs on DO App Platform TOR1 — see docs/DEPLOY_ACADEMY.md §1 for the
-# residency decision). The BullMQ processors run IN-PROCESS inside the API
-# (they are Nest providers), so no separate worker component is needed.
+# Region tor1 (Toronto) → Canadian data residency, mirroring ElderCare (which
+# runs on DO App Platform TOR1). The BullMQ processors run IN-PROCESS inside the
+# API (they are Nest providers), so no separate worker component is needed.
 #
-# This is a STARTING POINT — finalize cluster names, instance sizes, and the
-# custom domain in the DO dashboard. Secrets (type: SECRET, no value here) must
-# be set via the dashboard or `doctl apps update` — never committed.
+# COST-MINIMISED, NO-AWS setup (owner decision 2026-07-21):
+#   - DB    : a separate `academy` database on the EXISTING eldercare-pg-prod
+#             cluster (no new cluster bill). Paste its connection string into
+#             DATABASE_URL (SECRET) below — no `databases:` block, so DO won't
+#             provision a new paid cluster.
+#   - Redis : the EXISTING eldercare-redis-prod Valkey (BullMQ uses its own key
+#             prefixes; no collision). Paste into REDIS_URL (SECRET).
+#   - Files : DO Spaces (TOR1), S3-compatible — see AWS_ENDPOINT_URL_S3. No AWS.
+#   - Email : Resend is OPTIONAL and left unset — the Academy sender no-ops
+#             safely, and training-expiry reminders come from ElderCare's
+#             credential-expiry emails (via cert flow-back). Add SMTP later if
+#             an Academy-native email need appears.
 #
+# Secrets (type: SECRET, no value here) are set in the DO dashboard / doctl.
 #   doctl apps create --spec .do/academy-api.app.yaml
 #
 name: academy-api
 region: tor1
-
-databases:
-  # Attach existing managed clusters (create them first, TOR1). DO injects the
-  # connection strings referenced below. Migrations use the DIRECT connection
-  # (not a transaction-mode pool) — see the PRE_DEPLOY job note.
-  - name: academy-db
-    engine: PG
-    production: true
-    cluster_name: academy-pg-prod
-  - name: academy-redis
-    engine: REDIS
-    production: true
-    cluster_name: academy-redis-prod
 
 # Run pending Prisma migrations before each deploy goes live.
 jobs:
@@ -38,9 +34,11 @@ jobs:
       branch: main
     run_command: node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma
     envs:
+      # Use the DIRECT connection (port 25060), NOT a transaction-mode pool —
+      # pooled connections choke on DDL.
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${academy-db.DATABASE_URL}
+        type: SECRET
 
 services:
   - name: api
@@ -66,12 +64,15 @@ services:
         value: production
       - key: API_PORT
         value: "4000"
+      # Existing eldercare-pg-prod cluster, database `academy` (pooled URL is fine
+      # for the app; the migrate job above uses the direct URL):
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${academy-db.DATABASE_URL}
+        type: SECRET
+      # Existing eldercare-redis-prod Valkey (rediss://…):
       - key: REDIS_URL
         scope: RUN_TIME
-        value: ${academy-redis.DATABASE_URL}
+        type: SECRET
       - key: WEB_BASE_URL
         scope: RUN_TIME
         value: https://academy.eldercare-companion.com
@@ -94,7 +95,7 @@ services:
       - key: MUX_TOKEN_SECRET
         scope: RUN_TIME
         type: SECRET
-      - key: MUX_WEBHOOK_SECRET
+      - key: MUX_WEBHOOK_SECRET        # created AFTER first deploy (needs the API URL), then set + redeploy
         scope: RUN_TIME
         type: SECRET
       - key: MUX_SIGNING_KEY_ID
@@ -104,26 +105,28 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-      # --- Object storage (S3-compatible; DO Spaces TOR1 keeps files in Canada) ---
+      # --- Object storage: DO Spaces (TOR1), S3-compatible, NO AWS ---
+      # The AWS SDK reads AWS_ENDPOINT_URL_S3 from the env natively (no code
+      # change — same mechanism the local MinIO dev setup uses). The AWS_* names
+      # are just S3 config; the values are DO Spaces keys.
+      - key: AWS_ENDPOINT_URL_S3
+        value: https://tor1.digitaloceanspaces.com
       - key: AWS_REGION
-        value: ca-central-1            # for AWS S3; for DO Spaces use e.g. tor1 + AWS_ENDPOINT_URL_S3
+        value: tor1                    # SDK requires a value; Spaces ignores it
       - key: AWS_S3_BUCKET
-        scope: RUN_TIME
-        value: academy-uploads-prod
-      - key: AWS_ACCESS_KEY_ID
+        value: academy-uploads-prod    # a Space you create in TOR1 (set it Private)
+      - key: AWS_ACCESS_KEY_ID         # DO Spaces access key (Spaces → Access Keys)
         scope: RUN_TIME
         type: SECRET
       - key: AWS_SECRET_ACCESS_KEY
         scope: RUN_TIME
         type: SECRET
-      # - key: AWS_ENDPOINT_URL_S3       # set only for DO Spaces, e.g. https://tor1.digitaloceanspaces.com
-      #   scope: RUN_TIME
-      #   value: https://tor1.digitaloceanspaces.com
 
-      # --- Email (Resend) ---
-      - key: RESEND_API_KEY
-        scope: RUN_TIME
-        type: SECRET
-      - key: EMAIL_FROM
-        scope: RUN_TIME
-        value: no-reply@academy.eldercare-companion.com
+      # --- Email (OPTIONAL) ---
+      # Leave RESEND_API_KEY unset for launch — the sender no-ops and ElderCare
+      # sends the training-expiry reminders. Uncomment to enable Academy email:
+      # - key: RESEND_API_KEY
+      #   scope: RUN_TIME
+      #   type: SECRET
+      # - key: EMAIL_FROM
+      #   value: no-reply@academy.eldercare-companion.com
