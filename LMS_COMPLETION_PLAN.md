@@ -245,6 +245,36 @@ but it is not planned.
 
 ## 2. The completion plan (phased)
 
+> **📌 Status snapshot — session close 2026-07-20.** The product is functionally
+> complete and integrated end-to-end. **Phases A, C, D are DONE; Phase B is
+> partial (tooling + starter content done, SME review + more content remain);
+> Phase E (go-live hardening) is the only wholly-remaining phase.**
+>
+> | Phase | State | Evidence |
+> |---|---|---|
+> | A — learning experience | ✅ done | [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md) |
+> | B — content catalog | 🟡 partial | authoring UI + library-promote built; 6-module bilingual **starter library** seeded (`seed:homecare`). **Remaining:** SME review before "compliance" use; more modules; per-province role rows / policy sets |
+> | C — remove Clerk / federate | ✅ done | LMS-M6 complete: ElderCare Academy handoff SSO, Clerk deleted end-to-end (API + web), identity in ca-central-1 |
+> | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) |
+> | E — go-live hardening | ⬜ remaining | see the Phase E checklist below — deployment/ops, needs owner decisions |
+>
+> **What remains to launch (the close-out list):**
+> 1. **LMS-M1 secrets rotation** (only open audit finding) — Mux/AWS/Resend + the
+>    two Academy secrets (`ACADEMY_EXCHANGE_SECRET`, `ACADEMY_SESSION_SECRET`).
+>    Clerk keys are gone, not rotated.
+> 2. **Deploy** `academy.<eldercare-domain>` (both apps → ca-central-1) and wire
+>    the live `ELDERCARE_API_URL` + shared HMAC secret + session secret + the
+>    real `NEXT_PUBLIC_ELDERCARE_APP_URL` between the deployed apps.
+> 3. **DB backups + restore drill** (mirror ElderCare's posture).
+> 4. **Real-provider verification** the local stack can't do: Mux upload→webhook
+>    →playback with real keys; Resend prod email; and the SSO + flow-back driven
+>    against the *real* ElderCare deployment (not the local mocks used so far).
+> 5. **Entitlement lapse webhook (optional, Phase D follow-up):** claims-at-SSO
+>    covers login; an ElderCare→Academy webhook would close the mid-session
+>    window. Not required for a pilot.
+> 6. **Content (Phase B):** SME review of the starter library; author remaining
+>    modules; bilingual fr-CA QA; AODA/WCAG 2.1 AA pass (ON expansion).
+
 Phases A–B are **LMS-internal** and can proceed **now**, with no dependency on the
 ElderCare OIDC work. Phases C–D are the integration core and gate on the ElderCare
 prerequisite. Phase E is go-live. This ordering lets real progress happen before the
@@ -365,8 +395,17 @@ agency-audit export template (drop the "NB nursing-home inspection" framing).
   LTC operator is the customer.~~ **Dropped 2026-07-18: home-care only.**
 
 ### Phase C — Remove Clerk, federate from ElderCare (integration core)
-**Hard gate:** ElderCare can issue verifiable OIDC tokens (`psw` prerequisite — see §3).
-**Follow the audit's LMS-M6 decommission plan verbatim.** Summary sequence:
+**Status: ✅ done 2026-07-20 — LMS-M6 complete.** Delivered as the **ElderCare
+Academy handoff SSO** (not the full-OIDC shape originally sketched below — see
+[docs/ELDERCARE_ACADEMY_SSO_PLAN.md](docs/ELDERCARE_ACADEMY_SSO_PLAN.md)):
+ElderCare mints a one-time token → the Academy exchanges it (HMAC) → JIT-provisions
+org/site/user/staff via the Seam-2a role map → issues its own 8h session. Clerk was
+**hard-deleted** across API + web (owner's call — no real users yet), so there was
+no dual-stack window. Identity data is ca-central-1 end-to-end. The step list below
+is the original plan, kept for history; steps 1–3 landed as pre-gate refactors, 4–7
+as the cutover.
+
+**Original decommission sequence (historical):**
 1. Introduce an `IdentityProvider` interface behind the current Clerk callers (guard +
    current-user) with Clerk still the impl — pure refactor, CI green. *(LMS-internal;
    can land before the gate.)*
@@ -386,6 +425,15 @@ agency-audit export template (drop the "NB nursing-home inspection" framing).
    auth path, identity data in Canada.
 
 ### Phase D — Certificate flow-back to ElderCare (Seam 3) + entitlement flow-in
+**Status: ✅ done 2026-07-20.** On `certificate.issued` the Academy pushes the
+completion to ElderCare's `POST /academy/certificate` (HMAC service auth, BullMQ
+retry+backoff, idempotent on certificate id), which upserts a **verified, expiring
+`StaffCertification`** — feeding ElderCare's existing credential-expiry reminders
+(no new tracking feature; the models already matched the Seam-3 table). Entitlement
+is enforced **at SSO from the exchange claims** (active/trialing → in; lapsed →
+403). The mid-session lapse webhook (bullet 1 below) is the one deferred, optional
+follow-up. Original design notes retained below.
+
 **Gate:** an authenticated service channel between the two apps (falls out of Phase C).
 - **Entitlement flow-in (added 2026-07-18, replaces LMS billing):** the same
   channel carries the agency's entitlement (active/lapsed + seat count) from
@@ -404,13 +452,20 @@ agency-audit export template (drop the "NB nursing-home inspection" framing).
 - **Verify:** complete a training in the LMS → the caregiver's ElderCare credential
   list shows it with the right expiry → the renewal reminder fires on schedule.
 
-### Phase E — Go-live hardening
-- **Secrets rotation** (LMS-M1 folds in once Clerk is gone — no Clerk keys left).
-- ~~Stripe live keys + Stripe Tax (GST/HST);~~ *(removed 2026-07-18 — no LMS
-  billing; access is an ElderCare entitlement)* Mux prod; Resend prod; S3
-  ca-central-1 bucket + lifecycle/retention.
-- Deploy pipeline for `apps/api` + `apps/web` to ca-central-1; DB backups + restore
-  drill (mirror the ElderCare posture).
+### Phase E — Go-live hardening  ⬜ **the only remaining phase (deployment/ops)**
+- **LMS-M1 secrets rotation** (the only open audit finding): Mux, AWS, Resend +
+  the two Academy secrets (`ACADEMY_EXCHANGE_SECRET` shared with ElderCare,
+  `ACADEMY_SESSION_SECRET`). Clerk keys are deleted, not rotated.
+- **Deploy** `academy.<eldercare-domain>` — `apps/api` + `apps/web` to
+  ca-central-1; set the live `ELDERCARE_API_URL`, the shared HMAC secret, the
+  session secret, and `NEXT_PUBLIC_ELDERCARE_APP_URL` between the deployed apps.
+- Mux prod; Resend prod; S3 ca-central-1 bucket + lifecycle/retention (the
+  `scripts/setup-s3.sh` runbook exists).
+- **DB backups + restore drill** (mirror the ElderCare posture).
+- **Real-provider verification** the local stack could not do: Mux
+  upload→webhook→playback with real keys; Resend prod email; and the SSO +
+  certificate flow-back driven against the **real** ElderCare deployment
+  (both were verified locally against mocks only).
 - Bilingual QA (fr-CA), AODA/WCAG 2.1 AA pass (ON expansion).
 - Load-check the reports/export path (inspector PDFs).
 

@@ -105,7 +105,15 @@ These were verified by code-read this session and are genuinely good — the poi
 
 # MEDIUM — first patch
 
-### LMS-M1 · Live Clerk test secrets sit in the working-tree `.env` 🟡
+### LMS-M1 · Rotate provider secrets before launch (the only open finding) 🟡
+> **Updated 2026-07-20:** Clerk is decommissioned (LMS-M6 complete) — there are
+> no Clerk keys left to rotate. The remaining scope is a single coordinated
+> rotation of **Mux, AWS, Resend + the two Academy secrets**
+> (`ACADEMY_EXCHANGE_SECRET`, shared with ElderCare; `ACADEMY_SESSION_SECRET`,
+> signs Academy session cookies) as part of Phase E, before any operator PHI /
+> production cutover. The original note (below) predates the Clerk removal.
+
+#### Original note — Live Clerk test secrets sit in the working-tree `.env`
 - **Where:** `.env` (gitignored, **not** tracked — confirmed via `git ls-files`).
 - **Root cause:** `.env` carries working `CLERK_SECRET_KEY=sk_test_…` and publishable keys in plaintext (the file's own header says "Never commit real secrets"). No git leak, but these are live credentials to a Clerk dev instance sitting on disk; if the tree is ever shared/zipped they're exposed.
 - **Fix:** Rotate the Clerk dev keys; keep real values only in the developer's local untracked `.env`, and ensure `.env.example` carries placeholders only. Document the rotation in the runbook.
@@ -207,6 +215,18 @@ One engineer, ~1.5–2 weeks of focused work to make the LMS PHI-pilot-safe. Ord
 ---
 
 ## Changelog
+- _2026-07-20_ — **Phase D done + Phase B started; sprint closed.** Certificate
+  flow-back (Seam 3) live both repos: on `certificate.issued` the Academy pushes
+  a verified, expiring `StaffCertification` to ElderCare's `POST
+  /academy/certificate` (HMAC service auth, BullMQ retry+backoff, idempotent),
+  feeding the existing credential-expiry reminders; wire verified live against a
+  signature-checking mock. A 6-module bilingual **home-care starter library** was
+  seeded (`seed:homecare`) under a BYO-first content model (starter/example —
+  SME review required before "compliance" use). **The product is now functionally
+  complete; only Phase E go-live hardening remains** — see the status snapshot in
+  [LMS_COMPLETION_PLAN.md](LMS_COMPLETION_PLAN.md) §2. LMS-M1 (secrets rotation)
+  is the only open audit finding, now scoped to Mux/AWS/Resend + the two Academy
+  secrets.
 - _2026-07-20_ — **LMS-M6 complete: Clerk decommissioned; ElderCare Academy SSO
   is the sole identity source.** Hard switch (owner's call — no real users yet,
   so no gradual dual-stack window needed). Added the Academy handoff on the LMS
