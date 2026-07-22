@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Leaf } from "lucide-react";
 import { SESSION_COOKIE } from "@/lib/session-constants";
+import { getMe } from "@/lib/me";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +20,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const signedIn = (await cookies()).has(SESSION_COOKIE);
+
+  // Surface the Admin section for site/org admins. Resolved here (not just in
+  // /admin's own gate) so the section is discoverable from the header. Fails
+  // soft: an API hiccup just omits the link rather than breaking the shell.
+  let isAdmin = false;
+  if (signedIn) {
+    try {
+      const me = await getMe();
+      isAdmin =
+        me?.staff?.orgPermission === "ORG_ADMIN" ||
+        me?.staff?.orgPermission === "SITE_ADMIN";
+    } catch {
+      isAdmin = false;
+    }
+  }
 
   return (
     <html lang="en">
@@ -43,6 +59,14 @@ export default async function RootLayout({
                   >
                     Dashboard
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="rounded-md px-3 py-2 font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <Link
                     href="/sso/logout"
                     prefetch={false}
