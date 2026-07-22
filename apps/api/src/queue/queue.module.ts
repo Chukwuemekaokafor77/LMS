@@ -23,12 +23,20 @@ export const QUEUES = {
       useFactory: (config: ConfigService) => {
         const url = config.getOrThrow<string>("REDIS_URL");
         const u = new URL(url);
+        // rediss:// (DO Managed Valkey and the like) requires TLS. Because we
+        // pass host/port to ioredis rather than the URL, TLS must be enabled
+        // explicitly. rejectUnauthorized:false mirrors the Postgres
+        // sslmode=require posture used against the same DO cluster family
+        // (encrypt in-transit; the managed cert isn't in Node's CA bundle).
+        const tls =
+          u.protocol === "rediss:" ? { tls: { rejectUnauthorized: false } } : {};
         return {
           connection: {
             host: u.hostname,
             port: Number(u.port || 6379),
-            password: u.password || undefined,
-            username: u.username || undefined,
+            username: u.username ? decodeURIComponent(u.username) : undefined,
+            password: u.password ? decodeURIComponent(u.password) : undefined,
+            ...tls,
           },
         };
       },
