@@ -7,8 +7,6 @@ import {
   Param,
   Post,
 } from "@nestjs/common";
-import { z } from "zod";
-import { TrainingCadence } from "@prisma/client";
 import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import { RequiredTrainingService } from "./required-training.service";
