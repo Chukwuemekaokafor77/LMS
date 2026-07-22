@@ -41,8 +41,10 @@ export class AcademySsoService {
       throw new BadRequestException("Invalid or expired sign-in link");
     }
 
-    // Diagnostic: the exact claim values that drive the gate decisions below.
-    this.log.log(
+    // Diagnostic: the claim values that drive the gate decisions below. Debug
+    // level so it's available when needed but off the default prod log stream
+    // (no PII — ids/role/province/entitlement only). Rejections still WARN.
+    this.log.debug(
       `SSO claims: sub=${claims.sub} role=${claims.role} ` +
         `province=${claims.org?.province ?? "unset"} ` +
         `entitlement=${claims.entitlement?.status ?? "unset"}`,

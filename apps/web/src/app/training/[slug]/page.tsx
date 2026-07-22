@@ -22,7 +22,7 @@ export default async function ModulePage({
 }) {
   const { slug } = await params;
   const me = await getMe();
-  if (!me?.staff) redirect("/sign-in");
+  if (!me?.staff) redirect("/");
 
   const [mod, assignment] = await Promise.all([
     getModule(slug),
