@@ -8,8 +8,10 @@ import {
   Req,
   ServiceUnavailableException,
   UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import type { Request } from "express";
 import { Public } from "../auth/public.decorator";
 import { SkipPhiAccess } from "../audit/skip-phi-access.decorator";
@@ -37,6 +39,10 @@ export class EldercareEntitlementController {
   @Post("webhooks/eldercare/entitlement")
   @SkipPhiAccess()
   @HttpCode(200)
+  // Rate-limit the HMAC-verify path per source IP (bad-sig floods reject cheap,
+  // but this caps a runaway/hostile source). Generous vs. legit webhook volume.
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   async entitlement(
     @Req() req: Request,
     @Headers("x-academy-timestamp") timestamp: string | undefined,
