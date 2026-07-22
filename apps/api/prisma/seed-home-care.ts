@@ -9,7 +9,45 @@ import { HOME_CARE_MODULES } from "./home-care-content";
  */
 const prisma = new PrismaClient();
 
+// Home-care role kinds (mirror src/auth/academy/eldercare-role-map.ts). Seeded
+// for every Atlantic jurisdiction so an admin can define RequiredTraining for a
+// role before any staff of that role have signed in. NS home support is the CCA
+// path (B0). Codes match what SSO provisioning upserts.
+const ROLE_KINDS = [
+  { kind: "HSW", en: "Home Support Worker", fr: "Préposé(e) au soutien à domicile" },
+  { kind: "RN", en: "Nurse", fr: "Infirmier(ère)" },
+  { kind: "AH", en: "Allied Health", fr: "Professionnel(le) paramédical(e)" },
+  { kind: "SUP", en: "Supervisor / Coordinator", fr: "Superviseur(e) / Coordonnateur(trice)" },
+  { kind: "MGMT", en: "Management", fr: "Direction" },
+  { kind: "OFFICE", en: "Office / Administration", fr: "Bureau / Administration" },
+] as const;
+const JURISDICTIONS = ["NB", "NS", "PE", "NL"] as const;
+
+async function seedRoles() {
+  let n = 0;
+  for (const j of JURISDICTIONS) {
+    for (const k of ROLE_KINDS) {
+      const isNsCca = j === "NS" && k.kind === "HSW";
+      const code = `${j}_${isNsCca ? "CCA" : k.kind}`;
+      await prisma.role.upsert({
+        where: { code },
+        create: {
+          code,
+          labelEn: isNsCca ? "Continuing Care Assistant" : k.en,
+          labelFr: isNsCca ? "Assistant(e) en soins continus" : k.fr,
+          jurisdiction: j,
+        },
+        update: {},
+      });
+      n++;
+    }
+  }
+  return n;
+}
+
 async function main() {
+  const roleCount = await seedRoles();
+
   for (const m of HOME_CARE_MODULES) {
     const mod = await prisma.module.upsert({
       where: { slug: m.slug },
@@ -88,7 +126,7 @@ async function main() {
   const questions = HOME_CARE_MODULES.reduce((n, m) => n + m.questions.length, 0);
   // eslint-disable-next-line no-console
   console.log(
-    `Seeded home-care starter library: ${HOME_CARE_MODULES.length} modules, ${lessons} lessons, ${questions} quiz questions.`,
+    `Seeded home-care starter library: ${roleCount} roles, ${HOME_CARE_MODULES.length} modules, ${lessons} lessons, ${questions} quiz questions.`,
   );
 }
 
