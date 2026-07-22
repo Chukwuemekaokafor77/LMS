@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/session-constants";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Server-side exchange: prefer the runtime API_BASE_URL (a plain server env,
+// always current) over the build-time-inlined NEXT_PUBLIC_API_URL.
+const API =
+  process.env.API_BASE_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:4000";
+
+/**
+ * Build absolute redirects from the *public* host. Behind DO's proxy, req.url's
+ * host is the container's internal 0.0.0.0:3000, so redirects must use the
+ * forwarded host or they point at 0.0.0.0.
+ */
+function publicUrl(path: string, req: NextRequest): URL {
+  const proto = req.headers.get("x-forwarded-proto") ?? "https";
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  return new URL(path, host ? `${proto}://${host}` : req.nextUrl.origin);
+}
 
 /**
  * Academy SSO entry (Seam 1). ElderCare's "Training" button lands the browser
@@ -13,7 +29,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("t");
   if (!token) {
-    return NextResponse.redirect(new URL("/?sso_error=missing", req.url));
+    return NextResponse.redirect(publicUrl("/?sso_error=missing", req));
   }
 
   try {
@@ -29,7 +45,7 @@ export async function GET(req: NextRequest) {
       expiresIn: number;
     };
 
-    const response = NextResponse.redirect(new URL("/dashboard", req.url));
+    const response = NextResponse.redirect(publicUrl("/dashboard", req));
     response.cookies.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -39,6 +55,6 @@ export async function GET(req: NextRequest) {
     });
     return response;
   } catch {
-    return NextResponse.redirect(new URL("/?sso_error=1", req.url));
+    return NextResponse.redirect(publicUrl("/?sso_error=1", req));
   }
 }

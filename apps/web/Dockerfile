@@ -3,6 +3,14 @@ RUN corepack enable
 
 FROM base AS builder
 WORKDIR /app
+# NEXT_PUBLIC_* are inlined into the client bundle at build time. DO App Platform
+# passes BUILD_TIME env vars as Docker --build-arg, so they must be declared as
+# ARG and re-exported as ENV here or `next build` bakes `undefined` (→ the
+# localhost fallback in the app). See .do/academy-web.app.yaml.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_ELDERCARE_APP_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_ELDERCARE_APP_URL=$NEXT_PUBLIC_ELDERCARE_APP_URL
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @maple-care/web build
