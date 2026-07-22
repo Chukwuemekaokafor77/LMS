@@ -39,7 +39,7 @@ jobs:
     github:
       repo: Chukwuemekaokafor77/LMS
       branch: main
-    run_command: node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma
+    run_command: node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma
     envs:
       # Use the DIRECT connection (port 25060), NOT a transaction-mode pool —
       # pooled connections choke on DDL.

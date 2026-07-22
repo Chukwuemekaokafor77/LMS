@@ -3,7 +3,11 @@
 // Schema is multi-tenant from day 1 to support NS/PE/NL expansion.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev; the musl-openssl-3.0.x engine for the Alpine
+  // production image (DO App Platform). Without it Prisma ships the openssl-1.1
+  // engine and fails to load on node:20-alpine (OpenSSL 3).
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
