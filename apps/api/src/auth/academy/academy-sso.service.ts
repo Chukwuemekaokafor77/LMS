@@ -41,7 +41,17 @@ export class AcademySsoService {
       throw new BadRequestException("Invalid or expired sign-in link");
     }
 
+    // Diagnostic: the exact claim values that drive the gate decisions below.
+    this.log.log(
+      `SSO claims: sub=${claims.sub} role=${claims.role} ` +
+        `province=${claims.org?.province ?? "unset"} ` +
+        `entitlement=${claims.entitlement?.status ?? "unset"}`,
+    );
+
     if (!isEntitlementActive(claims.entitlement?.status)) {
+      this.log.warn(
+        `SSO rejected: entitlement '${claims.entitlement?.status ?? "unset"}' not active (org ${claims.org?.id})`,
+      );
       throw new ForbiddenException(
         "Your agency's ElderCare subscription is not active",
       );
@@ -49,6 +59,9 @@ export class AcademySsoService {
 
     const jurisdiction = mapProvince(claims.org.province);
     if (!jurisdiction) {
+      this.log.warn(
+        `SSO rejected: unsupported province '${claims.org.province ?? "unset"}' (org ${claims.org?.id})`,
+      );
       throw new BadRequestException(
         `Your agency's province (${claims.org.province ?? "unset"}) is not supported yet`,
       );
@@ -56,6 +69,9 @@ export class AcademySsoService {
 
     const role = mapEldercareRole(claims.role, jurisdiction);
     if (!role) {
+      this.log.warn(
+        `SSO rejected: unmapped role '${claims.role}' for ${jurisdiction}`,
+      );
       throw new ForbiddenException(
         `Your ElderCare role (${claims.role}) has no training seat`,
       );
