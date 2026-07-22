@@ -4,15 +4,15 @@ import { useSession } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-const NB_ROLES = [
-  "NB_RA",
-  "NB_PCW",
-  "NB_RPN",
-  "NB_RN",
-  "NB_ACTIVATION",
-  "NB_DIETARY",
-  "NB_HOUSEKEEPING",
-  "NB_ADMIN",
+// Home-care role kinds (match apps/api eldercare-role-map + the seeded Role
+// rows). LTC codes (RA/PCW/…) were retired with the home-care pivot.
+const NB_ROLES: { code: string; label: string }[] = [
+  { code: "NB_HSW", label: "Home Support Worker" },
+  { code: "NB_RN", label: "Nurse" },
+  { code: "NB_AH", label: "Allied Health" },
+  { code: "NB_SUP", label: "Supervisor / Coordinator" },
+  { code: "NB_MGMT", label: "Management" },
+  { code: "NB_OFFICE", label: "Office / Administration" },
 ];
 
 export function CreateRequiredTrainingForm({
@@ -68,8 +68,8 @@ export function CreateRequiredTrainingForm({
     >
       <select name="roleCode" required className="rounded border px-3 py-2">
         {NB_ROLES.map((r) => (
-          <option key={r} value={r}>
-            {r}
+          <option key={r.code} value={r.code}>
+            {r.label}
           </option>
         ))}
       </select>
