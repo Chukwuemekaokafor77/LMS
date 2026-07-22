@@ -8,7 +8,11 @@ async function bootstrap() {
   // rawBody: true makes req.rawBody available for Mux webhooks
   // signature verification while still parsing JSON normally.
   const app = await NestFactory.create(AppModule, {
-    cors: true,
+    // Restrict browser (CORS) access to the Academy web origin only — the client
+    // components call this API cross-origin with a Bearer token. Server-to-server
+    // callers (the ElderCare/Mux webhooks, DO health checks) send no Origin, so
+    // this doesn't affect them. `cors: true` reflected any origin.
+    cors: { origin: process.env.WEB_BASE_URL ?? "http://localhost:3000" },
     rawBody: true,
   });
 

@@ -8,7 +8,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const me = await getMe();
-  if (!me) redirect("/sign-in");
+  // No Academy login screen (Clerk removed). An unauthenticated visitor lands
+  // on "/", which sends them to ElderCare to sign in and re-enter via Training.
+  if (!me) redirect("/");
   if (!me.staff) redirect("/onboarding");
   if (me.staff.orgPermission === "STAFF") redirect("/dashboard");
 

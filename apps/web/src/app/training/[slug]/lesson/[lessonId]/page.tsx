@@ -11,7 +11,7 @@ export default async function LessonPage({
 }) {
   const { slug, lessonId } = await params;
   const me = await getMe();
-  if (!me?.staff) redirect("/sign-in");
+  if (!me?.staff) redirect("/");
 
   const mod = await getModule(slug);
   if (!mod) notFound();

@@ -27,7 +27,7 @@ async function getAssignments(): Promise<Assignment[]> {
 
 export default async function DashboardPage() {
   const me = await getMe();
-  if (!me) redirect("/sign-in");
+  if (!me) redirect("/"); // no Academy login — "/" routes to ElderCare
   if (!me.staff) redirect("/onboarding");
 
   const fr = me.user.preferredLocale === "fr-CA";

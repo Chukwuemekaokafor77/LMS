@@ -41,7 +41,7 @@ export default async function QuizPage({
   searchParams: Promise<{ assignmentId?: string }>;
 }) {
   const me = await getMe();
-  if (!me?.staff) redirect("/sign-in");
+  if (!me?.staff) redirect("/");
   const { assignmentId } = await searchParams;
   if (!assignmentId) redirect("/dashboard");
   const a = await getAssignment(assignmentId);
