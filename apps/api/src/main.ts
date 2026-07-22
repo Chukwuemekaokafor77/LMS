@@ -16,6 +16,11 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  // Behind DO's edge proxy: trust X-Forwarded-* so req.ip is the real client
+  // (the rate limiter keys on it). Without this every request looks like the
+  // proxy IP and shares one bucket.
+  app.getHttpAdapter().getInstance().set("trust proxy", true);
+
   // Open a tenant scope around every request *before* guards run, so the auth
   // guard can populate orgId into it and the Prisma guardrail (LMS-H1) can read
   // it on every PHI query for the rest of the request. Must be the outermost

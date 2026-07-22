@@ -9,8 +9,10 @@ import {
   Post,
   Req,
   UnauthorizedException,
+  UseGuards,
   Get,
 } from "@nestjs/common";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import type { Request } from "express";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { Public } from "../auth/public.decorator";
@@ -55,6 +57,8 @@ export class VideoController {
   @Post("webhooks/mux")
   @SkipPhiAccess()
   @HttpCode(200)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   async webhook(
     @Req() req: Request,
     @Headers("mux-signature") signature: string | undefined,
