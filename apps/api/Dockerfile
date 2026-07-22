@@ -1,7 +1,8 @@
 FROM node:20-alpine AS base
 
-# Install pnpm
-RUN corepack enable
+# pnpm + openssl. Prisma's musl query/schema engines dynamically link libssl;
+# without the openssl package Alpine can't load them ("engines not compatible").
+RUN corepack enable && apk add --no-cache openssl
 
 # ── Build stage ─────────────────────────────────────────────────────────────
 FROM base AS builder
@@ -17,12 +18,16 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built app and dependencies
+# Copy built app and dependencies. In a pnpm workspace the API's deps + the
+# prisma CLI live in apps/api/node_modules (relative symlinks into the root
+# .pnpm store), so BOTH trees are required for module resolution to work.
 COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/apps/api/node_modules /app/apps/api/node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
-EXPOSE 3001
+EXPOSE 4000
 
-CMD ["node", "apps/api/dist/main"]
+# nest build emits to dist/src (no rootDir override), so the entry is dist/src/main.js.
+CMD ["node", "apps/api/dist/src/main"]

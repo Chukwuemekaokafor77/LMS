@@ -1,0 +1,21 @@
+# Deps + build artifacts are produced inside the image. Excluding them keeps the
+# build context small AND stops a host (e.g. Windows) node_modules from polluting
+# the Linux build — which otherwise breaks `prisma generate`. DO already builds
+# from a clean git clone; this makes local `docker build` match that.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+
+# VCS + CI
+.git
+.github
+
+# Local env + secrets — never bake into an image
+.env
+.env.*
+!.env.example
+
+# Not needed in the image
+backups
+**/*.log
