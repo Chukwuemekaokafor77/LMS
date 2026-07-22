@@ -13,7 +13,7 @@ import {
   type PhiAccessConfig,
 } from "./phi-access.decorator";
 import { SKIP_PHI_ACCESS_KEY } from "./skip-phi-access.decorator";
-import { ForbiddenException, InternalServerErrorException } from "@nestjs/common";
+import { InternalServerErrorException } from "@nestjs/common";
 
 /**
  * Apply globally; controllers that touch PHI annotate their handlers with

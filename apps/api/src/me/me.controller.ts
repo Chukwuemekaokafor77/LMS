@@ -9,7 +9,6 @@ import { CurrentStaff } from "../tenant/current-staff.decorator";
 import type { StaffContext } from "../tenant/tenant.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { PhiAccess } from "../audit/phi-access.decorator";
-import { SKIP_PHI_ACCESS_KEY } from "../audit/skip-phi-access.decorator";
 
 @Controller("me")
 export class MeController {

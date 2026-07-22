@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AssignmentsService } from "./assignments.service";
-import { PrismaService } from "../prisma/prisma.service";
-import { AuditService } from "../audit/audit.service";
-import { Queue } from "bullmq";
 
 describe("AssignmentsService Scoring Logic", () => {
   let service: AssignmentsService;
@@ -62,7 +59,7 @@ describe("AssignmentsService Scoring Logic", () => {
     prisma.attempt.findUnique.mockResolvedValue(mockAttempt);
     prisma.staff.findUnique.mockResolvedValue({ orgId: "org-1" });
 
-    const result = await service.submitAttempt({
+    await service.submitAttempt({
       attemptId: "att-1",
       staffId: "staff-1",
       responses: [
