@@ -38,6 +38,7 @@ export default async function LessonPage({
         <LessonPlayer
           lessonId={lesson.id}
           videoStatus={lesson.videoStatus}
+          body={fr ? lesson.bodyFr : lesson.bodyEn}
           initiallyCompleted={lesson.completedAt !== null}
           fr={fr}
           nextHref={next ? `/training/${slug}/lesson/${next.id}` : null}
