@@ -12,6 +12,8 @@ export type ModuleDetail = {
     id: string;
     titleEn: string;
     titleFr: string;
+    bodyEn: string | null;
+    bodyFr: string | null;
     isPreview: boolean;
     videoStatus: string;
     durationSec: number | null;

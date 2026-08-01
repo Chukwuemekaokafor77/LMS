@@ -77,12 +77,19 @@ async function main() {
       const l = m.lessons[i];
       await prisma.lesson.upsert({
         where: { moduleId_position: { moduleId: mod.id, position: i } },
-        update: { titleEn: l.titleEn, titleFr: l.titleFr },
+        update: {
+          titleEn: l.titleEn,
+          titleFr: l.titleFr,
+          bodyEn: l.bodyEn,
+          bodyFr: l.bodyFr,
+        },
         create: {
           moduleId: mod.id,
           position: i,
           titleEn: l.titleEn,
           titleFr: l.titleFr,
+          bodyEn: l.bodyEn,
+          bodyFr: l.bodyFr,
           isPreview: i === 0,
         },
       });

@@ -253,7 +253,7 @@ but it is not planned.
 > | Phase | State | Evidence |
 > |---|---|---|
 > | A — learning experience | ✅ done | [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md) |
-> | B — content catalog | 🟡 partial | authoring UI + library-promote built; **11-module** bilingual **starter library** seeded (`seed:homecare`, 43 lessons / 41 quiz Qs). **Remaining:** SME review before "compliance" use; more modules; per-province role rows / policy sets |
+> | B — content catalog | 🟡 partial | authoring UI + library-promote built; **11-module** bilingual **starter library** seeded (`seed:homecare`, 43 lessons / 41 quiz Qs), each lesson with a **readable EN/FR body** (real training, not just titles — `feat/academy-lesson-content`, 2026-08-01). **Remaining:** SME review before "compliance" use; more modules; BYO/produced videos; per-province role rows / policy sets |
 > | C — remove Clerk / federate | ✅ done | LMS-M6 complete: ElderCare Academy handoff SSO, Clerk deleted end-to-end (API + web), identity in ca-central-1 |
 > | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) **and mid-session** (2026-07-21 entitlement-lapse webhook, both repos — bullet 5 below) |
 > | E — go-live hardening | ⬜ remaining | see the Phase E checklist below — deployment/ops, needs owner decisions |
@@ -332,10 +332,17 @@ the Home, Falls Prevention in the Home, Privacy & Confidentiality, Safe Travel
 Between Clients, Safe Lifting & Client Handling, Dementia & Responsive
 Behaviours, Medication Support in the Home, Recognizing & Reporting Abuse and
 Neglect, Working in the Client's Home: Boundaries/Family/Pets), **43 lessons +
-41 EN/FR quiz questions** (expanded from 6/23/21 on 2026-07-21). **Starter/example
-only — SME review required before use as compliance; not marketed as provincially
-mandated** (see §B0). Lesson videos remain BYO. Remaining Phase B work: SME review
-of the starter content, more modules, per-province role rows / policy sets.
+41 EN/FR quiz questions** (expanded from 6/23/21 on 2026-07-21). Each lesson now
+ships a **readable EN/FR body** (2026-08-01, `feat/academy-lesson-content`), so a
+module is real training from day one — a learner reads the lesson and marks it
+complete, and that gates the quiz. Previously lessons had titles only, so a
+content-pending module showed a bare "Start quiz" with nothing to learn (the
+vacuous `[].every()` unlock); the gate now counts a lesson as gating once it has
+a READY video **or** a body. **Starter/example only — SME review required before
+use as compliance; not marketed as provincially mandated** (see §B0). Lesson
+videos remain BYO and play above the same text once uploaded. Remaining Phase B
+work: SME review of the starter content, more modules, per-province role rows /
+policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license

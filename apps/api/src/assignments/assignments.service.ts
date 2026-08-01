@@ -70,15 +70,19 @@ export class AssignmentsService {
   }
 
   /**
-   * Quiz gate: every lesson of the module with a READY video must be completed
-   * by this staff before an attempt may start or be submitted. Lessons whose
-   * video is still pending/processing can't be watched, so they don't block.
+   * Quiz gate: every consumable lesson of the module must be completed by this
+   * staff before an attempt may start or be submitted. A lesson is consumable
+   * once it has a READY video OR a readable body; a lesson that is still fully
+   * content-pending (no video, no body) can't be consumed, so it doesn't block.
    * Enforced server-side on both start and submit — the UI lock alone would
    * be trivial to bypass for a product whose output is a compliance record.
    */
   private async assertLessonsComplete(moduleId: string, staffId: string) {
     const required = await this.prisma.lesson.findMany({
-      where: { moduleId, videoStatus: "READY" },
+      where: {
+        moduleId,
+        OR: [{ videoStatus: "READY" }, { bodyEn: { not: null } }],
+      },
       select: { id: true },
     });
     if (required.length === 0) return;

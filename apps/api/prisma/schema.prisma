@@ -224,6 +224,12 @@ model Lesson {
   module        Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   titleEn       String
   titleFr       String
+  // Readable lesson content (bilingual), shown when there is no video yet — the
+  // starter library ships text lessons so a module is real training before an
+  // agency uploads BYO video. A lesson with a body gates the quiz just like a
+  // READY video does (see ModulesService / AssignmentsService).
+  bodyEn        String?           @db.Text
+  bodyFr        String?           @db.Text
   position      Int
   muxAssetId    String?           @unique
   muxPlaybackId String?

@@ -33,8 +33,12 @@ export default async function ModulePage({
   const fr = me.user.preferredLocale === "fr-CA";
   const title = fr ? mod.titleFr : mod.titleEn;
   const desc = fr ? mod.descriptionFr : mod.descriptionEn;
-  const canWatch = (l: ModuleDetail["lessons"][number]) =>
-    l.videoStatus === "READY" && (l.isPreview || assignment !== null);
+  // A lesson can be opened once it has consumable content — a READY video or a
+  // readable body — and the learner is entitled to it (preview, or assigned).
+  const hasContent = (l: ModuleDetail["lessons"][number]) =>
+    l.videoStatus === "READY" || l.bodyEn !== null;
+  const canOpen = (l: ModuleDetail["lessons"][number]) =>
+    hasContent(l) && (l.isPreview || assignment !== null);
 
   return (
     <main className="container py-12">
@@ -60,7 +64,7 @@ export default async function ModulePage({
             >
               {l.completedAt ? "✓" : `${i + 1}.`}
             </span>
-            {canWatch(l) ? (
+            {canOpen(l) ? (
               <Link
                 href={`/training/${slug}/lesson/${l.id}`}
                 className="font-medium hover:underline"
@@ -75,9 +79,9 @@ export default async function ModulePage({
                 preview
               </span>
             )}
-            {l.videoStatus !== "READY" && (
+            {l.videoStatus !== "READY" && l.bodyEn === null && (
               <span className="text-xs text-muted-foreground">
-                {fr ? "(vidéo à venir)" : "(video coming soon)"}
+                {fr ? "(bientôt disponible)" : "(coming soon)"}
               </span>
             )}
           </li>

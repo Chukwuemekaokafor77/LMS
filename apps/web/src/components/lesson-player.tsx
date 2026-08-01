@@ -13,6 +13,7 @@ type Playback = { playbackId: string; token: string };
 export function LessonPlayer({
   lessonId,
   videoStatus,
+  body,
   initiallyCompleted,
   fr,
   nextHref,
@@ -20,6 +21,7 @@ export function LessonPlayer({
 }: {
   lessonId: string;
   videoStatus: string;
+  body: string | null;
   initiallyCompleted: boolean;
   fr: boolean;
   nextHref: string | null;
@@ -94,11 +96,42 @@ export function LessonPlayer({
             {fr ? "Chargement de la vidéo…" : "Loading video…"}
           </div>
         )
+      ) : body ? (
+        <article className="max-w-3xl space-y-4 text-[15px] leading-relaxed">
+          {body.split("\n\n").map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+        </article>
       ) : (
         <p className="rounded border p-4 text-sm text-muted-foreground">
           {fr
-            ? "La vidéo de cette leçon n'est pas encore disponible. Elle ne bloque pas le quiz."
-            : "This lesson's video isn't available yet. It doesn't block the quiz."}
+            ? "Le contenu de cette leçon n'est pas encore disponible."
+            : "This lesson's content isn't available yet."}
+        </p>
+      )}
+
+      {/* Reading lessons (no video) are completed with an explicit button — a
+          video lesson auto-completes on end via onEnded above. */}
+      {!ready && body && !completed && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={markComplete}
+            className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            {fr ? "Marquer la leçon comme complétée" : "Mark lesson complete"}
+          </button>
+        </div>
+      )}
+
+      {/* Video-load errors render inline in the player above; this covers the
+          reading path (e.g. a failed "mark complete"). */}
+      {!ready && error && (
+        <p className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {fr
+            ? "Une erreur est survenue. Réessayez."
+            : "Something went wrong. Please try again."}{" "}
+          ({error})
         </p>
       )}
 

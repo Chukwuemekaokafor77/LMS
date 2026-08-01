@@ -67,9 +67,13 @@ export class ModulesService {
       throw new NotFoundException(`Module ${slug} not found`);
     }
 
-    // Per-staff lesson completion + the quiz gate. Only lessons whose video is
-    // READY gate the quiz — content-pending lessons can't be watched, so they
-    // must not lock the learner out (mirrors AssignmentsService's server gate).
+    // Per-staff lesson completion + the quiz gate. A lesson gates the quiz once
+    // it has consumable content — a READY video OR a readable body. A lesson
+    // that is still fully content-pending (no video, no body) can't be consumed,
+    // so it must not lock the learner out (mirrors AssignmentsService's server
+    // gate). Note: `[].every()` is true, so a module with no gating lessons at
+    // all leaves the quiz open — but the starter library seeds a body on every
+    // lesson, so that vacuous case no longer surfaces a bare quiz.
     const completed = staffId
       ? await this.progress.forModule(module.id, staffId)
       : new Map<string, Date>();
@@ -77,8 +81,10 @@ export class ModulesService {
       ...l,
       completedAt: completed.get(l.id) ?? null,
     }));
+    const gatesQuiz = (l: (typeof lessons)[number]) =>
+      l.videoStatus === "READY" || l.bodyEn !== null;
     const quizUnlocked = lessons
-      .filter((l) => l.videoStatus === "READY")
+      .filter(gatesQuiz)
       .every((l) => l.completedAt !== null);
 
     return { ...module, lessons, quizUnlocked };
