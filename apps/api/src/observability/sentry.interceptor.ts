@@ -18,6 +18,10 @@ import * as Sentry from "@sentry/node";
 @Injectable()
 export class SentryInterceptor implements NestInterceptor {
   intercept(_context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    // When Sentry isn't configured (no SENTRY_DSN → no client), stay completely
+    // out of the request pipeline: pass the handler through untouched.
+    if (!Sentry.getClient()) return next.handle();
+
     return next.handle().pipe(
       catchError((err: unknown) => {
         const status =
