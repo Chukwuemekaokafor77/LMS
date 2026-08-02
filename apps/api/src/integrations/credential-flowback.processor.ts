@@ -1,10 +1,11 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 import { EldercareFlowbackClient } from "./eldercare-flowback.client";
 
 /**
@@ -24,6 +25,11 @@ export class CredentialFlowbackProcessor extends WorkerHost {
     private readonly audit: AuditService,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.flowback, job, err);
   }
 
   async process(job: Job<{ certificateId: string }>): Promise<void> {

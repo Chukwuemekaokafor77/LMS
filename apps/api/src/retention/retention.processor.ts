@@ -1,10 +1,11 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 import { PrismaService } from "../prisma/prisma.service";
 import { S3Service } from "../storage/s3.service";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 
 /**
  * Per-entity retention policy. Atlantic LTC operators inherit federal
@@ -36,6 +37,11 @@ export class RetentionProcessor extends WorkerHost {
     private readonly s3: S3Service,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.retention, job, err);
   }
 
   async process(_job: Job): Promise<void> {

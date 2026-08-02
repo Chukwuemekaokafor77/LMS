@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Job } from "bullmq";
@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { EmailSender } from "./email.sender";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 
 type Jobs = {
   "assignment.assigned": { assignmentId: string };
@@ -26,6 +27,11 @@ export class EmailProcessor extends WorkerHost {
     private readonly config: ConfigService,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.email, job, err);
   }
 
   async process(job: Job<Jobs[keyof Jobs]>): Promise<void> {
