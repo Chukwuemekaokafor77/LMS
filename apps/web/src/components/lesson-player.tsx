@@ -18,6 +18,7 @@ export function LessonPlayer({
   initiallyCompleted,
   fr,
   nextHref,
+  nextLabel,
   moduleHref,
 }: {
   lessonId: string;
@@ -26,6 +27,7 @@ export function LessonPlayer({
   initiallyCompleted: boolean;
   fr: boolean;
   nextHref: string | null;
+  nextLabel?: string | null;
   moduleHref: string;
 }) {
   const { getToken } = useSession();
@@ -149,10 +151,13 @@ export function LessonPlayer({
           (nextHref ? (
             <Link
               href={nextHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+              className="inline-flex max-w-full items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
             >
-              {fr ? "Leçon suivante" : "Next lesson"}
-              <ArrowRight className="h-4 w-4" />
+              <span className="truncate">
+                {fr ? "Leçon suivante" : "Next lesson"}
+                {nextLabel ? `: ${nextLabel}` : ""}
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>
           ) : (
             <Link
