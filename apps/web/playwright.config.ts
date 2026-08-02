@@ -15,13 +15,21 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: "./e2e/test-results",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: "list",
+  // Generous timeouts: Next dev lazily compiles each route on first visit, so an
+  // initial navigation can take several seconds. A production build (CI) is
+  // precompiled and fast; these ceilings just avoid dev first-hit flakiness.
+  timeout: 90_000,
+  expect: { timeout: 15_000 },
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     trace: "on-first-retry",
   },
   projects: [
