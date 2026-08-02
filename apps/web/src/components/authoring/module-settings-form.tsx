@@ -118,8 +118,16 @@ export function ModuleSettingsForm({ module: mod }: { module: Mod }) {
         />
       </label>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-green-600">Saved.</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p role="status" className="text-sm text-green-600">
+          Saved.
+        </p>
+      )}
 
       <div className="flex items-center gap-3">
         <button

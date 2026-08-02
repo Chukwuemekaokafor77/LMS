@@ -80,14 +80,23 @@ export function RosterUploader() {
       <input
         type="file"
         accept=".csv,text/csv"
+        aria-label="Upload roster CSV"
         onChange={onFile}
         disabled={busy}
         className="rounded border p-3"
       />
-      {busy && <p className="text-sm text-muted-foreground">Uploading…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {busy && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Uploading…
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
       {status && (
-        <div className="rounded border p-4 text-sm">
+        <div role="status" className="rounded border p-4 text-sm">
           <p>
             <strong>Status:</strong> {status.status}
           </p>

@@ -155,6 +155,7 @@ export function LessonManager({
                 }}
                 type="file"
                 accept="video/*"
+                aria-label={`Upload video for lesson ${i + 1}`}
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -223,7 +224,11 @@ export function LessonManager({
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

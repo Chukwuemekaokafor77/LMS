@@ -276,7 +276,11 @@ export function QuizRunner({
               {busy ? "…" : fr ? "Démarrer le quiz" : "Start quiz"}
             </button>
           )}
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+          {error && (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {error}
+        </p>
+      )}
         </div>
       </div>
     );
@@ -370,7 +374,11 @@ export function QuizRunner({
         </span>
       </label>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <button
         onClick={submit}

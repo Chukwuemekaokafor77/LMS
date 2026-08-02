@@ -27,17 +27,20 @@ export function ReportFilters() {
       <input
         name="from"
         type="date"
+        aria-label="From date"
         defaultValue={sp.get("from") ?? ""}
         className="rounded border px-3 py-2"
       />
       <input
         name="to"
         type="date"
+        aria-label="To date"
         defaultValue={sp.get("to") ?? ""}
         className="rounded border px-3 py-2"
       />
       <input
         name="module"
+        aria-label="Module slug"
         placeholder="module slug"
         defaultValue={sp.get("module") ?? ""}
         className="rounded border px-3 py-2"
