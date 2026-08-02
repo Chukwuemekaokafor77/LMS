@@ -165,6 +165,7 @@ export function QuizBuilder({
             <span className="text-sm font-semibold">Question {i + 1}</span>
             <div className="flex items-center gap-2">
               <select
+                aria-label={`Question ${i + 1} answer type`}
                 className="rounded border px-2 py-1 text-xs"
                 value={q.type}
                 onChange={(e) => setType(i, e.target.value as QType)}
@@ -213,9 +214,11 @@ export function QuizBuilder({
                   checked={q.correctIdx.includes(idx)}
                   onChange={() => toggleCorrect(i, idx)}
                   title="Correct answer"
+                  aria-label={`Mark choice ${idx + 1} as correct`}
                 />
                 <input
                   className="flex-1 rounded border px-2 py-1 text-sm"
+                  aria-label={`Question ${i + 1} choice ${idx + 1} (English)`}
                   placeholder={`Choice ${idx + 1} (English)`}
                   value={c}
                   disabled={q.type === "TRUE_FALSE"}
@@ -223,6 +226,7 @@ export function QuizBuilder({
                 />
                 <input
                   className="flex-1 rounded border px-2 py-1 text-sm"
+                  aria-label={`Question ${i + 1} choice ${idx + 1} (French)`}
                   placeholder={`Choix ${idx + 1} (français)`}
                   value={q.choicesFr[idx] ?? ""}
                   disabled={q.type === "TRUE_FALSE"}
@@ -272,14 +276,22 @@ export function QuizBuilder({
         >
           {busy ? "Saving…" : "Save quiz"}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved.</span>}
+        {saved && (
+          <span role="status" className="text-sm text-green-600">
+            Saved.
+          </span>
+        )}
       </div>
       {questions.length === 0 && (
         <p className="text-xs text-muted-foreground">
           No questions yet — add at least one to save a quiz.
         </p>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

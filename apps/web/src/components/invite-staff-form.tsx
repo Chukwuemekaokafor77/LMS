@@ -68,18 +68,29 @@ export function InviteStaffForm() {
       <input
         name="email"
         type="email"
+        aria-label="Staff email"
         placeholder="staff@example.com"
         required
         className="rounded border px-3 py-2 md:col-span-2"
       />
-      <select name="roleCode" required className="rounded border px-3 py-2">
+      <select
+        name="roleCode"
+        required
+        aria-label="Role"
+        className="rounded border px-3 py-2"
+      >
         {NB_ROLE_OPTIONS.map((r) => (
           <option key={r.code} value={r.code}>
             {r.label}
           </option>
         ))}
       </select>
-      <select name="orgPermission" className="rounded border px-3 py-2" defaultValue="STAFF">
+      <select
+        name="orgPermission"
+        aria-label="Permission level"
+        className="rounded border px-3 py-2"
+        defaultValue="STAFF"
+      >
         <option value="STAFF">Staff</option>
         <option value="SITE_ADMIN">Site admin</option>
         <option value="ORG_ADMIN">Org admin</option>
@@ -93,6 +104,7 @@ export function InviteStaffForm() {
       </button>
       {msg && (
         <p
+          role={msg.kind === "err" ? "alert" : "status"}
           className={`md:col-span-5 text-sm ${
             msg.kind === "err" ? "text-red-600" : "text-green-700"
           }`}

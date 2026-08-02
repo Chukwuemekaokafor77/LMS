@@ -17,8 +17,8 @@ Status legend: `[x]` fixed · `[ ]` open · `[~]` needs tooling to confirm/close
 
 - [x] **1. Page `lang` hard-coded to English.** `<html lang="en">` but FR users get French content → screen reader uses the wrong voice. **WCAG 3.1.1 (A).** Fix: derive `lang` from `me.user.preferredLocale`. — `apps/web/src/app/layout.tsx`
 - [x] **2. No "skip to content" link.** Keyboard/SR users tab through the sticky header on every page. **WCAG 2.4.1 (A).** Fix: visually-hidden skip link → page main. — `apps/web/src/app/layout.tsx`
-- [ ] **3. Admin/authoring forms lack labels.** Selects/inputs have `name` but no `<label>`; the number field uses a `placeholder` as a pseudo-label. **WCAG 1.3.1 / 3.3.2 / 4.1.2 (A).** Sampled in `create-required-training-form.tsx`; sweep quiz-builder, module-create, lesson-manager, roster, staff, report-filters.
-- [ ] **4. Form errors not announced.** Errors render as plain `<p>` with no live region. **WCAG 3.3.1 / 4.1.3 (AA).** Fix: `role="alert"` / `aria-live`. — form components + `quiz-runner.tsx`
+- [x] **3. Admin/authoring forms lack labels.** Selects/inputs had `name` but no `<label>`; the number field used a `placeholder` as a pseudo-label. **WCAG 1.3.1 / 3.3.2 / 4.1.2 (A).** Fixed: accessible names (`aria-label` / linked `<label>`) on every control across create-required-training, invite-staff, report-filters, roster-uploader, onboarding (jurisdiction select), quiz-builder (type / correct / choice inputs), and lesson-manager (video input).
+- [x] **4. Form errors not announced.** Errors rendered as plain `<p>` with no live region. **WCAG 3.3.1 / 4.1.3 (AA).** Fixed: `role="alert"` on error messages and `role="status"` on success/progress messages across the above forms + the quiz runner. — form components + `quiz-runner.tsx`
 
 ## Medium
 

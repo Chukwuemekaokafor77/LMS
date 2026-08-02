@@ -58,8 +58,11 @@ export function OnboardingForm() {
     <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-5">
       <Field label="Organization name" name="name" required />
       <div>
-        <label className="block text-sm font-medium">Jurisdiction</label>
+        <label className="block text-sm font-medium" htmlFor="jurisdiction">
+          Jurisdiction
+        </label>
         <select
+          id="jurisdiction"
           name="jurisdiction"
           defaultValue="NB"
           className="mt-1 w-full rounded border px-3 py-2"
@@ -76,7 +79,11 @@ export function OnboardingForm() {
       <Field label="Site address (optional)" name="siteAddress" />
       <Field label="Regulator license number (optional)" name="license" />
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"

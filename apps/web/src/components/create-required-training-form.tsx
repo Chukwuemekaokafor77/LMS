@@ -66,7 +66,12 @@ export function CreateRequiredTrainingForm({
       onSubmit={onSubmit}
       className="grid grid-cols-1 gap-3 rounded border p-4 md:grid-cols-5"
     >
-      <select name="roleCode" required className="rounded border px-3 py-2">
+      <select
+        name="roleCode"
+        required
+        aria-label="Role"
+        className="rounded border px-3 py-2"
+      >
         {NB_ROLES.map((r) => (
           <option key={r.code} value={r.code}>
             {r.label}
@@ -76,6 +81,7 @@ export function CreateRequiredTrainingForm({
       <select
         name="moduleId"
         required
+        aria-label="Module"
         className="rounded border px-3 py-2 md:col-span-2"
       >
         {modules.map((m) => (
@@ -84,7 +90,12 @@ export function CreateRequiredTrainingForm({
           </option>
         ))}
       </select>
-      <select name="cadence" required className="rounded border px-3 py-2">
+      <select
+        name="cadence"
+        required
+        aria-label="Cadence"
+        className="rounded border px-3 py-2"
+      >
         <option value="ONCE">Once</option>
         <option value="ANNUAL">Annual</option>
         <option value="TWO_YEARS">Every 2 years</option>
@@ -96,6 +107,7 @@ export function CreateRequiredTrainingForm({
         min={0}
         max={365}
         defaultValue={30}
+        aria-label="Grace days"
         className="rounded border px-3 py-2"
         placeholder="Grace days"
       />
@@ -106,7 +118,11 @@ export function CreateRequiredTrainingForm({
       >
         {busy ? "Adding…" : "Add required training"}
       </button>
-      {error && <p className="md:col-span-5 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="md:col-span-5 text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </form>
   );
 }
