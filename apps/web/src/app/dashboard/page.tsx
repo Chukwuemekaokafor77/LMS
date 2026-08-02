@@ -83,7 +83,14 @@ export default async function DashboardPage() {
                   {completed.length}/{total}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                role="progressbar"
+                aria-valuenow={completed.length}
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-label={fr ? "Progression globale" : "Overall progress"}
+                className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted"
+              >
                 <div
                   className="h-full rounded-full bg-brand-gradient transition-all"
                   style={{ width: `${pct}%` }}
