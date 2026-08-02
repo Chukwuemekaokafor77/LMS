@@ -2,6 +2,7 @@
 
 import { useSession } from "@/lib/session-client";
 import { useState } from "react";
+import Link from "next/link";
 import {
   Award,
   CheckCircle2,
@@ -178,8 +179,14 @@ export function QuizRunner({
               : "You've completed this training."
           }
         />
-        <div className="mt-6">
-          <CertificateLink certificateId={certificateId} fr={fr} />
+        <div className="mt-6 flex justify-center">
+          <Link
+            href={`/certificate/${certificateId}`}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+          >
+            <Award className="h-4 w-4" />
+            {fr ? "Voir l'attestation" : "View certificate"}
+          </Link>
         </div>
       </div>
     );
@@ -542,37 +549,3 @@ function QuizReview({
   );
 }
 
-function CertificateLink({
-  certificateId,
-  fr,
-}: {
-  certificateId: string;
-  fr: boolean;
-}) {
-  const { getToken } = useSession();
-  const [busy, setBusy] = useState(false);
-
-  async function open() {
-    setBusy(true);
-    const token = await getToken();
-    const res = await fetch(`${API}/certificates/${certificateId}/download`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const { url } = (await res.json()) as { url: string };
-      window.open(url, "_blank");
-    }
-    setBusy(false);
-  }
-
-  return (
-    <button
-      onClick={open}
-      disabled={busy}
-      className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-50"
-    >
-      <Award className="h-4 w-4" />
-      {busy ? "…" : fr ? "Télécharger l'attestation" : "Download certificate"}
-    </button>
-  );
-}

@@ -81,6 +81,20 @@
   }
 }
 
+/* Print: drop the sticky header + footer chrome so a printed page (e.g. the
+   certificate) is just its content, and keep brand colours in the output. */
+@media print {
+  body > header,
+  body > footer {
+    display: none !important;
+  }
+  .bg-brand-gradient,
+  .text-brand-gradient {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 @layer utilities {
   /* ElderCare "ocean" gradient (cyan → purple) for brand marks + accents. */
   .bg-brand-gradient {
