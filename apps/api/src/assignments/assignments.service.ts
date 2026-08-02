@@ -17,6 +17,21 @@ type SubmissionResponse = {
 };
 
 /**
+ * Per-question outcome returned after a submit. The answer key (correctIdx +
+ * explanations) is only populated when review is unlocked — the learner passed,
+ * or has used all their attempts. On a failed attempt with retries remaining we
+ * return correctness only, so the certificate can't be earned by copying the
+ * key off one throwaway attempt.
+ */
+export type QuestionResult = {
+  questionId: string;
+  correct: boolean;
+  correctIdx?: number[];
+  explainEn?: string | null;
+  explainFr?: string | null;
+};
+
+/**
  * Owner decision (2026-07-17): quiz attempts are capped at 5 per assignment.
  * An attempt is consumed when it is started; already-started attempts may
  * still be submitted. A renewal (new assignment from cadence) gets a fresh 5.
@@ -164,17 +179,21 @@ export class AssignmentsService {
       input.staffId,
     );
 
-    // Score: percent of questions where selected indices match correctIdx exactly.
-    const byId = new Map(quiz.questions.map((q) => [q.id, q]));
+    // Score: a question is correct when the selected indices match correctIdx
+    // exactly. Iterate questions (not just responses) so unanswered questions
+    // count as incorrect and appear in the review.
+    const selectionByQ = new Map(
+      input.responses.map((r) => [r.questionId, r.selectedIdx]),
+    );
+    const correctByQ = new Map<string, boolean>();
     let correct = 0;
-    for (const r of input.responses) {
-      const q = byId.get(r.questionId);
-      if (!q) continue;
+    for (const q of quiz.questions) {
       const expected = (q.correctIdx as number[]).slice().sort();
-      const got = r.selectedIdx.slice().sort();
+      const got = (selectionByQ.get(q.id) ?? []).slice().sort();
       const same =
         expected.length === got.length &&
         expected.every((v, i) => v === got[i]);
+      correctByQ.set(q.id, same);
       if (same) correct++;
     }
     const scorePct =
@@ -183,6 +202,27 @@ export class AssignmentsService {
         : Math.round((correct / quiz.questions.length) * 100);
     const passed = scorePct >= quiz.passMark;
     const submittedAt = new Date();
+
+    // Review-reveal policy (compliance integrity): only hand back the answer key
+    // once the learner has passed or exhausted their attempts. Otherwise return
+    // correctness only, so a failed attempt can't be used to farm the answers.
+    // (The attempt count is only needed on the failing path — short-circuit it.)
+    const reviewRevealed =
+      passed ||
+      (await this.prisma.attempt.count({
+        where: { assignmentId: attempt.assignmentId },
+      })) >= MAX_ATTEMPTS_PER_ASSIGNMENT;
+    const results: QuestionResult[] = quiz.questions.map((q) =>
+      reviewRevealed
+        ? {
+            questionId: q.id,
+            correct: correctByQ.get(q.id) ?? false,
+            correctIdx: q.correctIdx as number[],
+            explainEn: q.explainEn ?? null,
+            explainFr: q.explainFr ?? null,
+          }
+        : { questionId: q.id, correct: correctByQ.get(q.id) ?? false },
+    );
 
     // Tamper-evident attestation: SHA-256 over a canonical string.
     const hash = createHash("sha256")
@@ -239,6 +279,6 @@ export class AssignmentsService {
       await this.certQ.add("issue", { assignmentId: attempt.assignmentId });
     }
 
-    return updated;
+    return { ...updated, reviewRevealed, results };
   }
 }

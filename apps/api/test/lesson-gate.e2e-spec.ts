@@ -110,6 +110,11 @@ describe("lesson-progress quiz gate", () => {
     expect(submit.status).toBe(201);
     expect(submit.body.passed).toBe(true);
     expect(submit.body.scorePct).toBe(100);
+    // A passing submit unlocks review: the answer key is returned per question.
+    expect(submit.body.reviewRevealed).toBe(true);
+    expect(Array.isArray(submit.body.results)).toBe(true);
+    expect(submit.body.results[0]).toHaveProperty("correctIdx");
+    expect(submit.body.results[0]).toHaveProperty("correct", true);
   });
 
   it("re-completing is idempotent (one progress row)", async () => {

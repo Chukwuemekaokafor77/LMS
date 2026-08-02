@@ -13,6 +13,8 @@ describe("AssignmentsService Scoring Logic", () => {
       attempt: {
         findUnique: vi.fn(),
         update: vi.fn(),
+        // Used by the review-reveal policy on failing submits (below passMark).
+        count: vi.fn().mockResolvedValue(1),
       },
       assignment: {
         update: vi.fn(),
