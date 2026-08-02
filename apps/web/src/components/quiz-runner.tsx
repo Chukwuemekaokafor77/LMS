@@ -8,6 +8,8 @@ import {
   XCircle,
   RotateCcw,
   ShieldCheck,
+  BookOpen,
+  Info,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -19,6 +21,22 @@ type Q = {
   type: "SINGLE" | "MULTIPLE" | "TRUE_FALSE";
   choicesEn: string[];
   choicesFr: string[];
+};
+
+type QResult = {
+  questionId: string;
+  correct: boolean;
+  // Answer key — present only when review is unlocked (passed or exhausted).
+  correctIdx?: number[];
+  explainEn?: string | null;
+  explainFr?: string | null;
+};
+
+type SubmitResult = {
+  passed: boolean;
+  scorePct: number;
+  reviewRevealed: boolean;
+  results: QResult[];
 };
 
 export function QuizRunner({
@@ -54,10 +72,7 @@ export function QuizRunner({
   const [attestChecked, setAttestChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{
-    passed: boolean;
-    scorePct: number;
-  } | null>(null);
+  const [result, setResult] = useState<SubmitResult | null>(null);
 
   async function authedFetch(path: string, init: RequestInit = {}) {
     const token = await getToken();
@@ -133,7 +148,7 @@ export function QuizRunner({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message ?? `Failed (${res.status})`);
       }
-      const r = (await res.json()) as { passed: boolean; scorePct: number };
+      const r = (await res.json()) as SubmitResult;
       setResult(r);
     } catch (e) {
       setError((e as Error).message);
@@ -210,6 +225,13 @@ export function QuizRunner({
               </span>
             </button>
           ))}
+
+        <QuizReview
+          questions={questions}
+          answers={answers}
+          result={result}
+          fr={fr}
+        />
       </div>
     );
   }
@@ -389,6 +411,134 @@ function ResultBanner({
         {subtitle}
       </p>
     </div>
+  );
+}
+
+function QuizReview({
+  questions,
+  answers,
+  result,
+  fr,
+}: {
+  questions: Q[];
+  answers: Record<string, number[]>;
+  result: SubmitResult;
+  fr: boolean;
+}) {
+  const byId = new Map(result.results.map((r) => [r.questionId, r]));
+
+  // Failed with attempts remaining: point at the missed topics, never the key.
+  if (!result.reviewRevealed) {
+    const wrong = questions.filter((q) => byId.get(q.id)?.correct === false);
+    if (wrong.length === 0) return null;
+    return (
+      <section
+        className="mt-8"
+        aria-label={fr ? "À revoir avant de réessayer" : "Review before retrying"}
+      >
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <BookOpen className="h-4 w-4" />
+          {fr ? "À revoir avant de réessayer" : "Review before you retry"}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {fr
+            ? "Revoyez les leçons liées à ces questions, puis réessayez."
+            : "Revisit the lessons behind these questions, then try again."}
+        </p>
+        <ul className="mt-3 space-y-2">
+          {wrong.map((q) => (
+            <li
+              key={q.id}
+              className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 p-3 text-sm"
+            >
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+              <span>{fr ? q.promptFr : q.promptEn}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  // Passed or exhausted: full review with the answer key + explanations.
+  return (
+    <section className="mt-8" aria-label={fr ? "Révision" : "Review"}>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        {fr ? "Révision" : "Review"}
+      </h2>
+      <ol className="mt-4 space-y-4">
+        {questions.map((q, qi) => {
+          const r = byId.get(q.id);
+          const chosen = answers[q.id] ?? [];
+          const correctIdx = r?.correctIdx ?? [];
+          const explain = fr ? r?.explainFr : r?.explainEn;
+          const choices = fr ? q.choicesFr : q.choicesEn;
+          return (
+            <li
+              key={q.id}
+              className="rounded-2xl border border-border bg-background p-5 shadow-sm"
+            >
+              <div className="flex items-start gap-2">
+                {r?.correct ? (
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                ) : (
+                  <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                )}
+                <p className="font-medium leading-snug">
+                  <span className="text-muted-foreground">{qi + 1}.</span>{" "}
+                  {fr ? q.promptFr : q.promptEn}
+                </p>
+              </div>
+              <ul className="mt-3 space-y-1.5 sm:pl-7">
+                {choices.map((c, idx) => {
+                  const isCorrect = correctIdx.includes(idx);
+                  const isChosen = chosen.includes(idx);
+                  return (
+                    <li
+                      key={idx}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                        isCorrect
+                          ? "border-green-500/40 bg-green-500/5"
+                          : isChosen
+                            ? "border-red-500/40 bg-red-500/5"
+                            : "border-transparent"
+                      }`}
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                        {isCorrect ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        ) : isChosen ? (
+                          <XCircle className="h-4 w-4 text-red-500" />
+                        ) : null}
+                      </span>
+                      <span className={isCorrect ? "font-medium" : undefined}>
+                        {c}
+                      </span>
+                      {isChosen && !isCorrect && (
+                        <span className="ml-auto shrink-0 text-xs text-red-600">
+                          {fr ? "votre réponse" : "your answer"}
+                        </span>
+                      )}
+                      {isCorrect && !isChosen && (
+                        <span className="ml-auto shrink-0 text-xs text-green-700">
+                          {fr ? "bonne réponse" : "correct answer"}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {explain && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground sm:ml-7">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>{explain}</span>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
