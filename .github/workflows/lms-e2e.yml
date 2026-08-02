@@ -1,0 +1,116 @@
+name: LMS E2E (browser)
+
+# Browser end-to-end tests (Playwright) for the Academy learner journey. Kept in
+# a SEPARATE workflow from the main CI so it can be a non-required check while it
+# stabilises — don't mark it required in branch protection until it's been green
+# for a few runs. It stands up the full stack (API + web + Postgres + Redis),
+# seeds a learner, and drives the real UI. See apps/web/e2e/README.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: maple
+          POSTGRES_PASSWORD: maple
+          POSTGRES_DB: maple_care
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U maple"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://maple:maple@localhost:5432/maple_care
+      REDIS_URL: redis://localhost:6379
+      API_PORT: "4000"
+      # Web ↔ API wiring + the shared session secret (the setup step mints the
+      # academy_session cookie with this; the API verifies it).
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      ACADEMY_SESSION_SECRET: test-academy-session-secret
+      ACADEMY_EXCHANGE_SECRET: test-exchange-secret
+      # Dummy provider env so the API boots (mirrors test/harness.ts). None of
+      # these are exercised by the learner-journey path (no video/S3/email).
+      AWS_REGION: ca-central-1
+      AWS_S3_BUCKET: test-bucket
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      MUX_TOKEN_ID: test
+      MUX_TOKEN_SECRET: test
+      MUX_WEBHOOK_SECRET: test
+      MUX_SIGNING_KEY_ID: test
+      RESEND_API_KEY: re_test
+      EMAIL_FROM: test@example.com
+      WEB_BASE_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @maple-care/api exec prisma generate
+
+      - name: Apply migrations
+        run: pnpm --filter @maple-care/api exec prisma migrate deploy
+
+      - name: Seed the E2E fixture
+        run: pnpm --filter @maple-care/api run seed:e2e
+
+      - name: Build API + web
+        run: |
+          pnpm --filter @maple-care/api build
+          pnpm --filter @maple-care/web build
+
+      - name: Install Playwright browser
+        run: pnpm --filter @maple-care/web exec playwright install --with-deps chromium
+
+      # Start both servers and run the tests in one step so the backgrounded
+      # processes are guaranteed alive for the whole run.
+      - name: Start stack + run Playwright
+        run: |
+          node apps/api/dist/src/main.js > /tmp/api.log 2>&1 &
+          pnpm --filter @maple-care/web start > /tmp/web.log 2>&1 &
+          npx --yes wait-on -t 120000 http://localhost:4000/health http://localhost:3000 \
+            || (echo '--- API log ---'; cat /tmp/api.log; echo '--- web log ---'; cat /tmp/web.log; exit 1)
+          pnpm --filter @maple-care/web run e2e
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/e2e/test-results/
+          retention-days: 7
