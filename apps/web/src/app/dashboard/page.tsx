@@ -8,10 +8,10 @@ import {
   BookOpen,
   Trophy,
   CheckCircle2,
+  Award,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { getMe } from "@/lib/me";
-import { CertificateDownload } from "@/components/certificate-download";
 
 type Assignment = {
   id: string;
@@ -213,10 +213,13 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   {a.certificate && (
-                    <CertificateDownload
-                      certificateId={a.certificate.id}
-                      fr={fr}
-                    />
+                    <Link
+                      href={`/certificate/${a.certificate.id}`}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition hover:border-primary/40 hover:bg-muted"
+                    >
+                      <Award className="h-3.5 w-3.5" />
+                      {fr ? "Attestation" : "Certificate"}
+                    </Link>
                   )}
                 </li>
               ))}
