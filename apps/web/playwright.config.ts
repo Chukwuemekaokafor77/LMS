@@ -24,12 +24,12 @@ export default defineConfig({
   // Generous timeouts: Next dev lazily compiles each route on first visit, so an
   // initial navigation can take several seconds. A production build (CI) is
   // precompiled and fast; these ceilings just avoid dev first-hit flakiness.
-  timeout: 90_000,
-  expect: { timeout: 15_000 },
+  timeout: 120_000,
+  expect: { timeout: 30_000 },
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    actionTimeout: 20_000,
+    navigationTimeout: 45_000,
     trace: "on-first-retry",
   },
   projects: [

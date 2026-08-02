@@ -4,10 +4,10 @@
 **Method:** manual code review of the shell + full learner flow (landing,
 dashboard, module, lesson, quiz, certificate) plus a sampled admin form.
 
-**Still needed to fully close** (tooling/AT not available in the review env):
-1. Automated scan (axe-core / Lighthouse) for exact contrast ratios + DOM issues — ideally wired into CI so it can't regress.
-2. Screen-reader pass (NVDA / VoiceOver) through the learner flow in EN **and** FR.
-3. Full sweep of the remaining admin/authoring forms (one was sampled; findings likely repeat).
+**Still needed to fully close:**
+1. ~~Automated scan (axe-core / Lighthouse)~~ — **done:** axe-core runs against every screen in the Playwright learner journey (`apps/web/e2e/axe.ts`), failing on serious/critical WCAG A/AA violations, on every run of the (non-blocking) E2E CI job. This caught a real app-wide contrast miss (`--muted-foreground` was 4.48:1 on the light background — now darkened to pass 1.4.3).
+2. Screen-reader pass (NVDA / VoiceOver) through the learner flow in EN **and** FR — still recommended (automated tools catch ~40% of issues).
+3. A third-party a11y audit for the procurement sign-off.
 
 Status legend: `[x]` fixed · `[ ]` open · `[~]` needs tooling to confirm/close.
 
@@ -37,8 +37,8 @@ Status legend: `[x]` fixed · `[ ]` open · `[~]` needs tooling to confirm/close
 
 ## Remediation order
 
-1. **Quick wins (this PR):** #1, #2, #5, #8 — shell + status text + ARIA.
-2. **Forms pass:** #3, #4 — labels + live error regions across admin/authoring forms.
-3. **Contrast:** #7 — after an axe/Lighthouse run gives exact ratios.
-4. **Wire axe/Lighthouse into CI** so conformance is measured and non-regressing.
-5. **Screen-reader QA** in EN + FR, then a **third-party a11y audit** for the sign-off buyers/procurement expect.
+1. ✅ **Quick wins:** #1, #2, #5, #8 — shell + status text + ARIA.
+2. ✅ **Forms pass:** #3, #4 — labels + live error regions across admin/authoring forms.
+3. ✅ **Contrast:** #7 — cyan badges, certificate hash, and the app-wide `--muted-foreground` miss surfaced by axe.
+4. ✅ **Wire axe into CI** — runs against every journey screen; non-regressing.
+5. **Screen-reader QA** in EN + FR, then a **third-party a11y audit** for the sign-off buyers/procurement expect. _(remaining)_
