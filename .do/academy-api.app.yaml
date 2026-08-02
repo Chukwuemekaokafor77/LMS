@@ -89,6 +89,15 @@ services:
         scope: RUN_TIME
         type: SECRET
 
+      # --- Observability: Sentry (point at ElderCare's Sentry org). Leave
+      #     SENTRY_DSN unset to disable — the API runs with Sentry fully inert. ---
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+      - key: SENTRY_ENVIRONMENT
+        scope: RUN_TIME
+        value: production
+
       # --- Mux (video) ---
       - key: MUX_TOKEN_ID
         scope: RUN_TIME

@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TerminusModule } from "@nestjs/terminus";
 import { PrismaModule } from "./prisma/prisma.module";
 import { HealthController } from "./health/health.controller";
+import { SentryInterceptor } from "./observability/sentry.interceptor";
 import { AuthModule } from "./auth/auth.module";
 import { AcademyModule } from "./auth/academy/academy.module";
 import { AuditModule } from "./audit/audit.module";
@@ -59,5 +61,8 @@ import { RetentionModule } from "./retention/retention.module";
     RetentionModule,
   ],
   controllers: [HealthController],
+  // Global interceptor that reports 5xx/unexpected errors to Sentry (inert
+  // without SENTRY_DSN) then rethrows so the normal Nest error response stands.
+  providers: [{ provide: APP_INTERCEPTOR, useClass: SentryInterceptor }],
 })
 export class AppModule {}
