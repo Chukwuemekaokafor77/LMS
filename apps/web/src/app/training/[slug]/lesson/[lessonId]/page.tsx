@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { getMe } from "@/lib/me";
 import { getModule } from "@/lib/modules";
 import { LessonPlayer } from "@/components/lesson-player";
@@ -23,18 +24,25 @@ export default async function LessonPage({
   const fr = me.user.preferredLocale === "fr-CA";
 
   return (
-    <main className="container py-12">
+    <main className="container py-10">
       <Link
         href={`/training/${slug}`}
-        className="text-sm text-muted-foreground hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        ← {fr ? mod.titleFr : mod.titleEn}
+        <ArrowLeft className="h-4 w-4" />
+        {fr ? mod.titleFr : mod.titleEn}
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">
-        {idx + 1}. {fr ? lesson.titleFr : lesson.titleEn}
-      </h1>
 
-      <div className="mt-6 max-w-4xl">
+      <div className="mt-6 max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          {fr ? "Leçon" : "Lesson"} {idx + 1} / {mod.lessons.length}
+        </p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+          {fr ? lesson.titleFr : lesson.titleEn}
+        </h1>
+      </div>
+
+      <div className="mt-8 max-w-3xl">
         <LessonPlayer
           lessonId={lesson.id}
           videoStatus={lesson.videoStatus}
