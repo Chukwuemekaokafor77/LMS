@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 import { parse as parseCsv } from "csv-parse/sync";
@@ -7,6 +7,7 @@ import { S3Service } from "../storage/s3.service";
 import { InvitationsService } from "../staff/invitations.service";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 
 type Row = {
   email: string;
@@ -29,6 +30,11 @@ export class RosterProcessor extends WorkerHost {
     private readonly invitations: InvitationsService,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.roster, job, err);
   }
 
   async process(job: Job<{ importId: string }>): Promise<void> {

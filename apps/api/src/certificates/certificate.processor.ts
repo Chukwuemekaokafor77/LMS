@@ -1,4 +1,9 @@
-import { Processor, WorkerHost, InjectQueue } from "@nestjs/bullmq";
+import {
+  Processor,
+  WorkerHost,
+  InjectQueue,
+  OnWorkerEvent,
+} from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Queue, type Job } from "bullmq";
 import { createHash } from "crypto";
@@ -8,6 +13,7 @@ import { S3Service } from "../storage/s3.service";
 import { AuditService } from "../audit/audit.service";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 
 @Processor(QUEUES.certificate)
 export class CertificateProcessor extends WorkerHost {
@@ -21,6 +27,11 @@ export class CertificateProcessor extends WorkerHost {
     @InjectQueue(QUEUES.flowback) private readonly flowbackQ: Queue,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.certificate, job, err);
   }
 
   async process(job: Job<{ assignmentId: string }>): Promise<void> {

@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Queue, type Job } from "bullmq";
@@ -6,6 +6,7 @@ import { TrainingCadence } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { QUEUES } from "../queue/queue.module";
 import { runAsSystem } from "../tenant/tenant-context";
+import { captureJobFailure } from "../observability/capture-job-failure";
 
 type Jobs =
   | { name: "materialize"; data: { requiredTrainingId: string } }
@@ -30,6 +31,11 @@ export class MaterializeProcessor extends WorkerHost {
     @InjectQueue(QUEUES.email) private readonly emailQ: Queue,
   ) {
     super();
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job, err: Error): void {
+    captureJobFailure(QUEUES.materialize, job, err);
   }
 
   async process(job: Job<Jobs["data"]>): Promise<void> {
