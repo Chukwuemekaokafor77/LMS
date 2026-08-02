@@ -42,3 +42,14 @@ services:
       - key: NEXT_PUBLIC_ELDERCARE_APP_URL   # where signed-out visitors are sent (ElderCare "Training" entry)
         scope: BUILD_TIME
         value: https://app.eldercare-companion.com
+      # --- Observability: Sentry (point at ElderCare's Sentry org). Leave the
+      #     DSNs unset to disable — the app runs with Sentry fully inert. ---
+      - key: SENTRY_DSN                      # server-side (SSR / route-handler) errors, read at runtime
+        scope: RUN_TIME
+        type: SECRET
+      - key: NEXT_PUBLIC_SENTRY_DSN          # browser errors — inlined into the client bundle at build
+        scope: BUILD_TIME
+        type: SECRET
+      - key: SENTRY_ENVIRONMENT
+        scope: RUN_TIME
+        value: production
