@@ -144,7 +144,7 @@ export default async function CertificatePage({
                   : `Issued by ElderCare Academy · Jurisdiction: ${cert.jurisdiction}`}
               </p>
               {cert.attestationHash && (
-                <p className="mt-2 break-all font-mono text-[10px] leading-relaxed text-muted-foreground/80">
+                <p className="mt-2 break-all font-mono text-[11px] leading-relaxed text-muted-foreground">
                   {fr ? "Empreinte d'attestation (SHA-256) : " : "Attestation hash (SHA-256): "}
                   {cert.attestationHash}
                 </p>

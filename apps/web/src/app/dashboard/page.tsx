@@ -147,7 +147,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {started && (
-                          <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-medium text-secondary">
+                          <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-medium text-cyan-700 dark:text-cyan-300">
                             {fr ? "En cours" : "In progress"}
                           </span>
                         )}

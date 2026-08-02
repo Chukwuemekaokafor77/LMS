@@ -319,42 +319,46 @@ export function QuizRunner({
             key={q.id}
             className="rounded-2xl border border-border bg-background p-5 shadow-sm"
           >
-            <p className="font-medium leading-snug">
-              <span className="text-muted-foreground">{qi + 1}.</span>{" "}
-              {fr ? q.promptFr : q.promptEn}
-            </p>
-            {q.type === "MULTIPLE" && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {fr
-                  ? "Sélectionnez toutes les réponses qui s'appliquent."
-                  : "Select all that apply."}
-              </p>
-            )}
-            <ul className="mt-4 space-y-2">
-              {(fr ? q.choicesFr : q.choicesEn).map((c, idx) => {
-                const selected = (answers[q.id] ?? []).includes(idx);
-                return (
-                  <li key={idx}>
-                    <label
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${
-                        selected
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/40 hover:bg-muted/40"
-                      }`}
-                    >
-                      <input
-                        type={q.type === "MULTIPLE" ? "checkbox" : "radio"}
-                        name={q.id}
-                        checked={selected}
-                        onChange={() => toggle(q.id, idx, q.type)}
-                        className="h-4 w-4 accent-primary"
-                      />
-                      <span>{c}</span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
+            {/* fieldset + legend groups each question's options and gives the
+                radio/checkbox group its accessible name (the prompt). */}
+            <fieldset className="w-full min-w-0">
+              <legend className="font-medium leading-snug">
+                <span className="text-muted-foreground">{qi + 1}.</span>{" "}
+                {fr ? q.promptFr : q.promptEn}
+              </legend>
+              {q.type === "MULTIPLE" && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {fr
+                    ? "Sélectionnez toutes les réponses qui s'appliquent."
+                    : "Select all that apply."}
+                </p>
+              )}
+              <ul className="mt-4 space-y-2">
+                {(fr ? q.choicesFr : q.choicesEn).map((c, idx) => {
+                  const selected = (answers[q.id] ?? []).includes(idx);
+                  return (
+                    <li key={idx}>
+                      <label
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/40 hover:bg-muted/40"
+                        }`}
+                      >
+                        <input
+                          type={q.type === "MULTIPLE" ? "checkbox" : "radio"}
+                          name={q.id}
+                          checked={selected}
+                          onChange={() => toggle(q.id, idx, q.type)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span>{c}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
           </li>
         ))}
       </ol>

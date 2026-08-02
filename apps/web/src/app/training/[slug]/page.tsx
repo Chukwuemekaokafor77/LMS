@@ -173,7 +173,7 @@ export default async function ModulePage({
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {l.isPreview && (
-                      <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-[11px] font-medium text-secondary">
+                      <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan-700 dark:text-cyan-300">
                         {fr ? "aperçu" : "preview"}
                       </span>
                     )}

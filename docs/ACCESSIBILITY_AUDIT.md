@@ -23,8 +23,8 @@ Status legend: `[x]` fixed · `[ ]` open · `[~]` needs tooling to confirm/close
 ## Medium
 
 - [x] **5. Completion status conveyed by icon/colour only.** Done lessons show a green ✓ with no text. **WCAG 1.1.1 / 1.4.1 (A).** Fix: `sr-only` "Completed / Not started". — `training/[slug]/page.tsx`, `components/lesson-nav.tsx`
-- [ ] **6. Quiz answer groups not programmatically grouped.** Radios/checkboxes work by keyboard but aren't tied to the question prompt. **WCAG 1.3.1 (A).** Fix: `<fieldset><legend>` or `role="radiogroup"` + `aria-labelledby`. — `components/quiz-runner.tsx`
-- [~] **7. Low-contrast text.** Likely fails: cyan `text-secondary` badges (~2.4:1); certificate hash at `text-[10px] text-muted-foreground/80`; any opacity-reduced muted used for informative text. **WCAG 1.4.3 (AA).** Confirm exact ratios with axe, then darken cyan-for-text + drop opacity on informative muted text.
+- [x] **6. Quiz answer groups not programmatically grouped.** Radios/checkboxes worked by keyboard but weren't tied to the question prompt. **WCAG 1.3.1 (A).** Fixed: each question's options are wrapped in `<fieldset>` with the prompt as `<legend>`. — `components/quiz-runner.tsx`
+- [x] **7. Low-contrast text (identified items).** Fixed the flagged fails: the cyan `text-secondary` preview / in-progress badges now use `text-cyan-700 dark:text-cyan-300`; the certificate attestation hash dropped the size/opacity reduction (`text-[11px] text-muted-foreground`). **WCAG 1.4.3 (AA).** _Residual:_ a full axe/Lighthouse scan should still run to confirm exact ratios app-wide (see below).
 - [x] **8. Missing landmark/widget ARIA.** Header `<nav>` had no `aria-label`; progress bars were plain `<div>`s. **WCAG 1.3.1 (A).** Fix: label the nav; `role="progressbar"` + `aria-valuenow/min/max` on progress bars. — `layout.tsx`, `dashboard/page.tsx`, `training/[slug]/page.tsx`, `components/quiz-runner.tsx`
 
 ## Low / future
