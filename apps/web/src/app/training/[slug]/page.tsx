@@ -91,7 +91,14 @@ export default async function ModulePage({
                   {done}/{gating.length}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                role="progressbar"
+                aria-valuenow={done}
+                aria-valuemin={0}
+                aria-valuemax={gating.length}
+                aria-label={fr ? "Progression des leçons" : "Lesson progress"}
+                className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted"
+              >
                 <div
                   className="h-full rounded-full bg-brand-gradient transition-all"
                   style={{ width: `${pct}%` }}
@@ -132,6 +139,14 @@ export default async function ModulePage({
             }`;
             const inner = (
               <>
+                <span className="sr-only">
+                  {completedLesson ? (fr ? "Complétée. " : "Completed. ") : ""}
+                  {!lessonHasContent(l)
+                    ? fr
+                      ? "Bientôt disponible. "
+                      : "Coming soon. "
+                    : ""}
+                </span>
                 <span
                   aria-hidden
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${

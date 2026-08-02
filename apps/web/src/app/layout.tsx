@@ -24,23 +24,37 @@ export default async function RootLayout({
   // Surface the Admin section for site/org admins. Resolved here (not just in
   // /admin's own gate) so the section is discoverable from the header. Fails
   // soft: an API hiccup just omits the link rather than breaking the shell.
+  // Also derives the document language from the viewer's locale (a11y: the
+  // <html lang> must match the rendered content for screen readers).
   let isAdmin = false;
+  let lang = "en";
   if (signedIn) {
     try {
       const me = await getMe();
       isAdmin =
         me?.staff?.orgPermission === "ORG_ADMIN" ||
         me?.staff?.orgPermission === "SITE_ADMIN";
+      if (me?.user?.preferredLocale === "fr-CA") lang = "fr";
     } catch {
       isAdmin = false;
     }
   }
+  const fr = lang === "fr";
 
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body className="flex min-h-screen flex-col antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:font-medium focus:text-primary-foreground focus:shadow"
+        >
+          {fr ? "Passer au contenu principal" : "Skip to main content"}
+        </a>
         <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <nav className="container flex h-16 items-center justify-between">
+          <nav
+            aria-label={fr ? "Navigation principale" : "Main navigation"}
+            className="container flex h-16 items-center justify-between"
+          >
             <Link
               href="/"
               className="flex items-center gap-2 font-semibold tracking-tight"
@@ -87,7 +101,9 @@ export default async function RootLayout({
           </nav>
         </header>
 
-        <div className="flex-1">{children}</div>
+        <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
+          {children}
+        </div>
 
         <footer className="border-t border-border/60">
           <div className="container flex flex-col gap-3 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">

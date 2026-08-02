@@ -295,7 +295,14 @@ export function QuizRunner({
           {answeredCount}/{questions.length}
         </span>
       </div>
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div
+        role="progressbar"
+        aria-valuenow={answeredCount}
+        aria-valuemin={0}
+        aria-valuemax={questions.length}
+        aria-label={fr ? "Questions répondues" : "Questions answered"}
+        className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+      >
         <div
           className="h-full rounded-full bg-brand-gradient transition-all"
           style={{ width: `${(answeredCount / questions.length) * 100}%` }}

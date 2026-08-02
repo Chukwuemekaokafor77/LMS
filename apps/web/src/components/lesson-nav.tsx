@@ -42,9 +42,26 @@ export function LessonNav({
           const completed = l.completedAt !== null;
           const current = l.id === currentLessonId;
           const label = fr ? l.titleFr : l.titleEn;
+          const status = completed
+            ? fr
+              ? "Complétée. "
+              : "Completed. "
+            : !lessonHasContent(l)
+              ? fr
+                ? "Pas encore disponible. "
+                : "Not yet available. "
+              : current
+                ? fr
+                  ? "Leçon en cours. "
+                  : "Current lesson. "
+                : "";
           const inner = (
             <>
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <span className="sr-only">{status}</span>
+              <span
+                aria-hidden
+                className="flex h-5 w-5 shrink-0 items-center justify-center"
+              >
                 {completed ? (
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                 ) : !lessonHasContent(l) ? (
