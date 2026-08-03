@@ -59,12 +59,18 @@ export default async function RootLayout({
           >
             <Link
               href="/"
+              aria-label="ElderCare Academy home"
               className="flex items-center gap-2 font-semibold tracking-tight"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-white shadow-sm">
+              <span
+                aria-hidden
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-white shadow-sm"
+              >
                 <Leaf className="h-[18px] w-[18px]" />
               </span>
-              <span className="text-lg">ElderCare Academy</span>
+              {/* Wordmark hidden on the smallest screens so the header can't
+                  crowd/overflow on a phone; the leaf mark + aria-label carry it. */}
+              <span className="hidden text-lg sm:inline">ElderCare Academy</span>
             </Link>
             <div className="flex items-center gap-1 text-sm sm:gap-2">
               {signedIn ? (

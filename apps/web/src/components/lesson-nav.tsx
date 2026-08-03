@@ -81,7 +81,7 @@ export function LessonNav({
             </>
           );
           const base =
-            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition";
+            "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition";
           return (
             <li key={l.id}>
               {openable ? (
@@ -112,7 +112,7 @@ export function LessonNav({
           {quizUnlocked ? (
             <Link
               href={quizHref}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                 <Award className="h-4 w-4 text-primary" />
@@ -126,7 +126,7 @@ export function LessonNav({
                   : "Quiz"}
             </Link>
           ) : (
-            <span className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-muted-foreground">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                 <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
               </span>

@@ -222,7 +222,7 @@ export default async function DashboardPage() {
                   {a.certificate && (
                     <Link
                       href={`/certificate/${a.certificate.id}`}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition hover:border-primary/40 hover:bg-muted"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium transition hover:border-primary/40 hover:bg-muted"
                     >
                       <Award className="h-3.5 w-3.5" />
                       {fr ? "Attestation" : "Certificate"}
