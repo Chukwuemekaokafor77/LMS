@@ -173,12 +173,12 @@ export default async function ModulePage({
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {l.isPreview && (
-                      <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan-700 dark:text-cyan-300">
+                      <span className="rounded bg-secondary/10 px-1.5 py-0.5 text-xs font-medium text-cyan-700 dark:text-cyan-300">
                         {fr ? "aperçu" : "preview"}
                       </span>
                     )}
                     {lessonHasContent(l) ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         {l.videoStatus === "READY" ? (
                           <>
                             <PlayCircle className="h-3 w-3" />
@@ -192,7 +192,7 @@ export default async function ModulePage({
                         )}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {fr ? "bientôt disponible" : "coming soon"}
                       </span>
                     )}
