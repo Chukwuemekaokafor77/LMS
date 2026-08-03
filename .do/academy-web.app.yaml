@@ -53,3 +53,14 @@ services:
       - key: SENTRY_ENVIRONMENT
         scope: RUN_TIME
         value: production
+      # Source-map upload at build (so web stack traces de-minify in Sentry).
+      # Optional — leave SENTRY_AUTH_TOKEN unset and the build is unchanged.
+      - key: SENTRY_ORG
+        scope: BUILD_TIME
+        type: SECRET
+      - key: SENTRY_PROJECT
+        scope: BUILD_TIME
+        type: SECRET
+      - key: SENTRY_AUTH_TOKEN
+        scope: BUILD_TIME
+        type: SECRET
