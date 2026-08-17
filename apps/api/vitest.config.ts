@@ -33,13 +33,23 @@ export default defineConfig({
     // actually hold logic worth testing.
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov"],
+      reporter: ["text", "lcov", "json-summary"],
       include: ["src/**/*.service.ts"],
       exclude: [
-        "src/auth/clerk.service.ts",
+        // Thin SDK adapters, stubbed in the e2e harness (no real network in
+        // CI), so they hold no coverable business logic.
+        // src/auth/clerk.service.ts used to be listed here; it was deleted with
+        // the Clerk decommission (LMS-M6) and the stale entry outlived it.
         "src/storage/s3.service.ts",
         "src/video/mux.service.ts",
       ],
+      // Global floor. This is an average across the service layer, so it
+      // cannot see a single untested service — required-training.service.ts sat
+      // at 12% statements / 0% branches while the suite reported 83% overall.
+      // The per-file floor is enforced separately by scripts/coverage-floor.mjs,
+      // because vitest's glob thresholds aggregate over matching files rather
+      // than checking each one (verified: a 0%-covered probe service did not
+      // trip a glob threshold set to 40).
       thresholds: { lines: 60, functions: 60, statements: 60 },
     },
   },

@@ -1,12 +1,14 @@
 # Maple Care LMS — As-Built Reconciliation & Hardening Plan
 
-**Status:** 🟢 All CRITICAL + HIGH findings closed (2026-06-08). The safety infrastructure is now **verified, not just scaffolded**: the tenant-isolation guardrail was rewritten as fail-closed orgId injection (LMS-H1) and is **proven by a real two-org cross-tenant suite** (LMS-C1), with real-DB coverage of cert issuance / scoring / materialization / signature-verified webhooks behind a 60% service-coverage gate (LMS-C2); CI now stands up Postgres+Redis with a schema-drift gate, lint and typecheck (LMS-H2), and the API type-checks/builds (LMS-H3). **Remaining: only LMS-M1** (rotate the live Clerk dev keys in the untracked `.env`) — **intentionally deferred** to a single coordinated all-providers secrets-rotation pass before a real pilot. M2 (extend PrismaClient), M3 (DTO reject-path), M4 (audit trail), and M5 (materialization idempotency) are all done + merged. _(Original reconciliation note: the LMS was further along than ROADMAP Part A claimed — most of Phase 1 plus chunks of Phase 2/3 were already implemented, but unverified; this doc closed that gap.)_
+**Status:** 🟢 All CRITICAL + HIGH findings closed (2026-06-08). The safety infrastructure is now **verified, not just scaffolded**: the tenant-isolation guardrail was rewritten as fail-closed orgId injection (LMS-H1) and is **proven by a real two-org cross-tenant suite** (LMS-C1), with real-DB coverage of cert issuance / scoring / materialization / signature-verified webhooks behind a 60% service-coverage gate (LMS-C2); CI now stands up Postgres+Redis with a schema-drift gate, lint and typecheck (LMS-H2), and the API type-checks/builds (LMS-H3). **Remaining: only LMS-M1** — a single coordinated rotation of the Mux / AWS / Resend / Academy secrets before a real pilot, **intentionally deferred**. (It no longer involves Clerk keys; see the 2026-07-20 note on LMS-M1 itself.) M2 (extend PrismaClient), M3 (DTO reject-path), M4 (audit trail), and M5 (materialization idempotency) are all done + merged. _(Original reconciliation note: the LMS was further along than ROADMAP Part A claimed — most of Phase 1 plus chunks of Phase 2/3 were already implemented, but unverified; this doc closed that gap.)_
 
-> **⚠️ This is a paused product.** ElderCare is the active focus (see `ROADMAP.md` Part B, in the separate `psw` repo). This plan exists so that (a) the ROADMAP stops misrepresenting "paused" as "untouched," and (b) when an LMS resume trigger fires, the first engineer in has a precise, code-verified punch list instead of re-deriving the state. **Do not start this work** until a resume trigger fires — but keep this doc honest if the code changes.
+> **⚠️ Work resumed 2026-06-08 — this is no longer a paused product.** The banner below is kept because the *purpose* of the doc still holds, but its instruction does not: 122 commits landed between 2026-06-09 and 2026-08-03 (Clerk decommission, billing removal, the ElderCare Academy SSO/flowback/entitlement seams, Sentry, a web mobile-UX pass). ElderCare remains the primary focus; the LMS is now developed alongside it rather than shelved.
+>
+> _Original note:_ This plan exists so that (a) the ROADMAP stops misrepresenting "paused" as "untouched," and (b) when an LMS resume trigger fires, the first engineer in has a precise, code-verified punch list instead of re-deriving the state. Keep this doc honest if the code changes.
 
 **Repo:** `C:\Users\emekamichael\LMS` (separate from `psw`). All file paths below are relative to that repo root.
 **Audit scope:** Full `apps/api/src` (line-by-line on all PHI/tenant/billing/webhook paths), `apps/api/prisma/schema.prisma`, CI, Dockerfiles, env. `apps/web` structure-level only.
-**Last updated:** 2026-06-08
+**Last updated:** 2026-08-17 (drift review — see "Reconciliation, 2026-08-17" below; the findings themselves are still as of 2026-06-08 unless individually dated)
 **Owner:** _(assign when a resume trigger fires)_
 
 Legend — Severity: 🔴 CRITICAL (blocks any PHI pilot) · 🟠 HIGH (fix before first paid operator) · 🟡 MEDIUM (first patch) · 🔵 LOW (backlog).
@@ -29,15 +31,56 @@ Status: `[ ]` open · `[~]` partial / built-but-unverified · `[!]` built-but-br
 These were verified by code-read this session and are genuinely good — the point of the hardening work is to *prove* them with tests, not rebuild them:
 
 - **Application-layer tenant scoping is careful.** Admin/list paths filter `orgId` explicitly ([staff.service.ts:17](apps/api/src/staff/staff.service.ts)); by-id reads do a post-fetch ownership check (`if (!s || s.orgId !== actor.orgId) throw NotFound`, plus site/self gates — [staff.service.ts:50](apps/api/src/staff/staff.service.ts)); certificate download checks owner-or-same-org-admin ([certificates.controller.ts:38](apps/api/src/certificates/certificates.controller.ts)). No IDOR found in the reviewed paths.
-- **Webhook signature verification is implemented for all three providers** — Stripe (`constructEvent` over `rawBody` — [billing.controller.ts:64](apps/api/src/billing/billing.controller.ts)), Mux (`verifySignature` — [mux.service.ts:30](apps/api/src/video/mux.service.ts)), Clerk (svix `verify` — [clerk-webhook.controller.ts](apps/api/src/auth/clerk-webhook.controller.ts)). `rawBody: true` is set in [main.ts:11](apps/api/src/main.ts).
+- **Webhook signature verification is implemented on every inbound webhook.** Mux (`verifySignature` on the client instance — [mux.service.ts:31](apps/api/src/video/mux.service.ts)) and the ElderCare entitlement webhook (HMAC-SHA256 over `"<ts>.<raw-body>"` — [service-hmac.ts:14](apps/api/src/integrations/service-hmac.ts), called from [eldercare-entitlement.controller.ts:58](apps/api/src/integrations/eldercare-entitlement.controller.ts)). `rawBody: true` is set in [main.ts:11](apps/api/src/main.ts).
+  - **Correction (2026-08-17):** this bullet used to cite three providers — Stripe via `billing.controller.ts` and Clerk via `clerk-webhook.controller.ts`. **Both files no longer exist**: Clerk went with LMS-M6, billing with migration `20260718190000_drop_billing`. The claim survived the deletions and pointed a reader at safety infrastructure that had been removed.
   - **⚠️ Correction (2026-06-08):** the Mux call referenced a non-existent `Mux.webhooks` **static** (the v9 SDK exposes `verifySignature` on the client *instance*), so it never compiled and the Mux path was never actually exercised. Fixed in **LMS-H3**. The Stripe/Clerk verifications were sound; all three still need the integration tests in LMS-C2.
 - **PHI access logging is default-on.** The interceptor is a global `APP_INTERCEPTOR` ([audit.module.ts:12](apps/api/src/audit/audit.module.ts)) and *fails loud* in dev when a handler is missing `@PhiAccess`/`@SkipPhiAccess` ([phi-access.interceptor.ts:43](apps/api/src/audit/phi-access.interceptor.ts)).
 - **Global request validation is on** — `ValidationPipe({ whitelist, forbidNonWhitelisted, transform })` ([main.ts:14](apps/api/src/main.ts)).
-- **Global Clerk auth guard** ([auth.module.ts:16](apps/api/src/auth/auth.module.ts)) with a `@Public()` opt-out for webhooks/health.
+- **Global auth guard** ([auth.module.ts](apps/api/src/auth/auth.module.ts)) with a `@Public()` opt-out for webhooks/health. Since LMS-M6 the sole identity provider is `AcademyIdentityProvider`, which verifies ElderCare Academy session tokens; it is bound through an `IDENTITY_PROVIDER` token so the implementation can be swapped without touching call sites.
 - **Schema denormalizes `orgId` onto every PHI table** (`Staff`, `Assignment`, `Attempt`, `Certificate`, `RosterImport` all carry `orgId` + `@@index` — [schema.prisma](apps/api/prisma/schema.prisma)). This is what makes a *correct* guardrail cheap to build (see LMS-H1).
 - **`.env` is gitignored and not tracked** — no committed-secret leak (see LMS-M1 for the residual).
 
 ---
+
+# Reconciliation, 2026-08-17
+
+A drift review: does this document still describe the code? Everything below was
+executed, not read.
+
+**Verified green** (Postgres + Redis up, migrations applied):
+
+| Check | Result |
+| --- | --- |
+| API suite + coverage gate | pass |
+| Schema drift gate (the LMS-H2 step) | `No difference detected` |
+| `prisma validate` | valid |
+| `pnpm -r run typecheck` | clean, both apps |
+| `pnpm -r run lint` | 0 errors, 22 warnings |
+| Both CI workflows | every script, path and endpoint they reference exists |
+
+The three ElderCare seams agree field-for-field with the `psw` side and share
+one HMAC construction (`HMAC-SHA256(secret, "<unix-ts>.<raw-body>")`, headers
+`x-academy-timestamp` / `x-academy-signature`): SSO exchange
+(`POST /api/v1/academy/exchange`), certificate flow-back
+(`POST /api/v1/academy/certificate`), and the inbound entitlement webhook
+(`POST /webhooks/eldercare/entitlement`, idempotent on `event_id`). ElderCare
+signs compact JSON and transmits those exact bytes; the Academy verifies
+`rawBody`, so the comparison is byte-exact.
+
+**Drift found and fixed in this pass:**
+
+1. *"What is already solid"* cited `billing.controller.ts` and
+   `clerk-webhook.controller.ts` as evidence of webhook signature verification.
+   Both files were deleted (LMS-M6; migration `20260718190000_drop_billing`) and
+   the claim outlived them, pointing a reader at safety infrastructure that no
+   longer exists. Rewritten against what verifies signatures today.
+2. The header still summarised LMS-M1 as "rotate the live Clerk dev keys" even
+   though LMS-M1's own body was corrected on 2026-07-20. Summary now matches.
+3. The "do not start this work" banner survived 122 commits of active work.
+4. `vitest.config.ts` still excluded `src/auth/clerk.service.ts` from coverage —
+   a file deleted with LMS-M6.
+
+**Opened by this pass:** LMS-L3 (required-training coverage). See below.
 
 # CRITICAL — block any PHI pilot
 
@@ -163,6 +206,15 @@ These were verified by code-read this session and are genuinely good — the poi
 - **Fix:** Run the sweep under the LMS-H1 `runAsSystem()` escape so cross-org access is intentional and greppable, not incidental.
 - **Verify:** Retention test passes under the fail-closed extension.
 - **Effort:** S (folds into LMS-H1). **Status:** `[x]` — done in **LMS-H1** (PR #3): `RetentionProcessor.process()` wraps the whole sweep in `runAsSystem()`, so its cross-org `deleteMany`/`updateMany`/`findMany` on PHI models are now intentional and greppable rather than relying on the old prod no-op. Retention-under-fail-closed test is part of LMS-C2.
+
+### LMS-L3 · The coverage gate is an average, so one untested service hides behind the rest 🔵
+- **Where:** [apps/api/vitest.config.ts](apps/api/vitest.config.ts), [apps/api/src/required-training/required-training.service.ts](apps/api/src/required-training/required-training.service.ts)
+- **Root cause:** The LMS-C2 gate sets `thresholds: { lines: 60, functions: 60, statements: 60 }`, which vitest evaluates as an **average across every included file**. `required-training.service.ts` measured **12.12% statements / 0% branches / 25% functions** — lines 35–123, every authorisation and validation guard, never executed — while the suite reported 83% overall and the gate passed. The e2e specs touch the table when seeding fixtures, which produced just enough incidental coverage to look non-zero. This is the service that decides which module is mandatory for which role in which province.
+- **Fix:** Unit spec covering all three methods and every guard (role/jurisdiction mismatch, unpublished module, cross-org module, cross-org site, non-admin callers, 404-not-403 on another tenant's row, `graceDays: 0` surviving the `??` default). Coverage went to **100% statements / 97.22% branches**; suite totals moved 83.33→88.82% statements and 65.18→73.36% branches.
+- **Preventing recurrence:** vitest's *glob* thresholds do not solve this — they aggregate over matching files too. Verified: a deliberately untested probe service added under `src/` did **not** trip a glob threshold set to 40. So the per-file floor is enforced by [apps/api/scripts/coverage-floor.mjs](apps/api/scripts/coverage-floor.mjs), wired into `lms-ci.yml` after the vitest step. The floor is 40% — far below the global 60 on purpose: it answers "did anyone test this at all", not "is this well tested". It also fails if it matches zero files, so the gate cannot quietly stop checking.
+- **Verify:** `pnpm --filter @maple-care/api exec vitest run --coverage && pnpm --filter @maple-care/api run coverage:floor`. Confirmed the floor exits 1 and names the file when an untested service is present, and 0 (17 services checked) otherwise.
+- **Effort:** S. **Status:** `[x]` — done 2026-08-17.
+
 
 ---
 
