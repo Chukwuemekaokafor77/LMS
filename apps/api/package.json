@@ -15,7 +15,8 @@
     "s3:setup": "bash ../../scripts/setup-s3.sh",
     "library:promote": "ts-node scripts/promote-module.ts",
     "seed:homecare": "ts-node prisma/seed-home-care.ts",
-    "seed:e2e": "ts-node prisma/seed-e2e.ts"
+    "seed:e2e": "ts-node prisma/seed-e2e.ts",
+    "coverage:floor": "node scripts/coverage-floor.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.692.0",

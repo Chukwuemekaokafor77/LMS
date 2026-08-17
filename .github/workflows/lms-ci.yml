@@ -95,6 +95,15 @@ jobs:
       - name: Run API tests + coverage gate
         run: pnpm --filter @maple-care/api exec vitest run --coverage
 
+      # Per-file floor. The vitest threshold above is an average, so one
+      # untested service passes behind well-covered ones — which is how
+      # required-training.service.ts sat at 12% while the suite reported 83%.
+      # vitest's glob thresholds aggregate rather than checking each file, so
+      # this is enforced by a script instead. Runs on the summary the step
+      # above just wrote.
+      - name: Per-file coverage floor
+        run: pnpm --filter @maple-care/api run coverage:floor
+
       - name: Build API
         run: pnpm --filter @maple-care/api build
 
