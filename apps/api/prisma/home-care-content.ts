@@ -32,6 +32,40 @@ export type SeedQuestion = {
   explainFr?: string;
 };
 
+/** One traceable source behind a module's content. Written to
+ *  `Module.regulatoryCitations.sources`. `accessed` is the date the URL was
+ *  last confirmed live — re-verify before relying on it; URLs age. */
+export type SeedCitation = {
+  organization: string;
+  title: string;
+  url: string;
+  /** ISO date the URL was last confirmed live. */
+  accessed: string;
+  /** Reuse terms as read on `accessed` — why we paraphrase rather than quote. */
+  licence?: string;
+  /** Set when the URL could NOT be confirmed live, or the brief's description
+   *  of it could not be confirmed. Explains exactly what is unverified. */
+  unverified?: string;
+};
+
+/** Review state, seeded into `Module.regulatoryCitations` so the disclaimer
+ *  travels with the row instead of living only in this file's header. */
+export type SeedReviewStatus = {
+  /** Always `STARTER_NOTICE` on starter content. */
+  notice: string;
+  /** EN body provenance: "SOURCED" (paraphrased from the cited sources) or
+   *  "ORIGINAL" (no adequate free Canadian source found — needs SME *authoring*
+   *  review, not merely a fact-check). */
+  enProvenance: "SOURCED" | "ORIGINAL";
+  /** fr-CA bodies are machine-drafted until a human bilingual reviewer signs
+   *  off — this is Phase E's still-open "bilingual fr-CA QA" item. */
+  frStatus: string;
+  /** What a subject-matter expert must still resolve before compliance use. */
+  smeNeeds?: string;
+  /** Anything blocking the module from progressing (e.g. pending permission). */
+  blocker?: string;
+};
+
 export type HomeCareModule = {
   slug: string;
   titleEn: string;
@@ -40,9 +74,25 @@ export type HomeCareModule = {
   descriptionFr: string;
   durationMin: number;
   passMark: number;
+  /** Omit for cross-jurisdiction best-practice content. Only the NS CCA track
+   *  is province-scoped — per §B0 Finding 1 nothing else may be presented as
+   *  tied to a particular province's requirements. */
+  jurisdiction?: "NB" | "NS" | "PE" | "NL";
+  citations?: SeedCitation[];
+  review?: SeedReviewStatus;
   lessons: { titleEn: string; titleFr: string; bodyEn: string; bodyFr: string }[];
   questions: SeedQuestion[];
 };
+
+/** The disclaimer every starter module carries until an SME signs it off. */
+export const STARTER_NOTICE =
+  "STARTER CONTENT — SME REVIEW REQUIRED BEFORE COMPLIANCE USE";
+
+/** fr-CA flag required by step 3 of the Phase B content brief: every FR body in
+ *  this library is a machine draft produced FOR human review, not a finished
+ *  translation. No module is launch-ready until a fr-CA reviewer signs off. */
+export const FR_MACHINE_DRAFT =
+  "MACHINE-DRAFTED — PENDING HUMAN BILINGUAL QA";
 
 export const HOME_CARE_MODULES: HomeCareModule[] = [
   // ── 1. Home Support Fundamentals ─────────────────────────────────────
@@ -56,6 +106,37 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Le rôle, la portée et l'approche centrée sur la personne du préposé au soutien à domicile auprès des clients dans leur propre domicile.",
     durationMin: 35,
     passMark: 80,
+    citations: [
+      {
+        organization: "Nova Scotia Department of Health and Wellness",
+        title: "Continuing Care Assistant (CCA) Scope of Practice & Competency Framework (approved May 2019)",
+        url: "https://novascotia.ca/dhw/ccs/documents/scope_of_practice_cca.pdf",
+        accessed: "2026-09-09",
+        licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
+      },
+      {
+        organization: "BCcampus / Thompson Rivers University",
+        title: "Personal Care Skills for Health Care Assistants, 2nd Edition",
+        url: "https://opentextbc.ca/hcalabtheoryandpractice/",
+        accessed: "2026-09-09",
+        licence: "Creative Commons non-commercial variant (CC BY-NC-SA) per the BCcampus catalogue - NOT CC BY 4.0 as originally assumed. Background reading only; no text adapted.",
+        unverified: "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; the licence was read from the BCcampus catalogue listing and search metadata, not from the book's own licence page. Confirm the exact licence before adapting anything from it.",
+      },
+      {
+        organization: "BCcampus",
+        title: "Health Care Assistant Program Supplement to the Provincial Curriculum 2023",
+        url: "https://opentextbc.ca/hcasupplement/",
+        accessed: "2026-09-09",
+        licence: "CC BY-SA 4.0 - commercial use permitted, but ShareAlike is viral. Background reading only; nothing adapted.",
+        unverified: "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; licence read from search metadata rather than the licence page.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Confirm the scope-of-practice boundaries described here match each agency's own assignment/delegation policy. NB, PE and NL have no province-wide home-support scope document (B0 Finding 1), so the NS CCA framework is used as the nearest authoritative Canadian articulation - an SME must confirm it generalises fairly outside NS.",
+    },
     lessons: [
       {
         titleEn: "Your role and scope of practice",
@@ -185,6 +266,28 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Rester en sécurité en travaillant seul au domicile des clients : protocoles de vérification, vigilance situationnelle, désescalade et conduite à tenir en cas d'urgence sans équipe présente.",
     durationMin: 30,
     passMark: 80,
+    citations: [
+      {
+        organization: "Canadian Centre for Occupational Health and Safety",
+        title: "OSH Answers: Working Alone - Working with Patients (updated 2026-07-07)",
+        url: "https://www.ccohs.ca/oshanswers/hsprograms/alone/workingalone_patients.html",
+        accessed: "2026-09-09",
+        licence: "CCOHS requires PRIOR PERMISSION to reproduce its material and forbids editorial changes to reproduced text. Nothing here is reproduced or adapted - the content is original and cites CCOHS as a reference.",
+      },
+      {
+        organization: "Canadian Centre for Occupational Health and Safety",
+        title: "OSH Answers: Working Alone - General",
+        url: "https://www.ccohs.ca/oshanswers/hsprograms/alone/workingalone.html",
+        accessed: "2026-09-09",
+        licence: "CCOHS requires PRIOR PERMISSION to reproduce its material and forbids editorial changes to reproduced text. Nothing here is reproduced or adapted - the content is original and cites CCOHS as a reference.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Check the check-in and escalation steps against the agency's actual lone-worker procedure and the working-alone provisions of each province's OHS regulation.",
+    },
     lessons: [
       {
         titleEn: "Before the visit: plan and check in",
@@ -309,6 +412,28 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Hygiène des mains, EPI et pratiques sécuritaires adaptées au domicile du client — sans équipe de PCI et où vous gérez vos propres fournitures.",
     durationMin: 30,
     passMark: 80,
+    citations: [
+      {
+        organization: "Public Health Ontario",
+        title: "Infection Prevention and Control for Home and Community Care, Manual, 1st Revision (November 2025)",
+        url: "https://www.publichealthontario.ca/-/media/Documents/I/25/ipac-home-community-care.pdf",
+        accessed: "2026-09-09",
+        licence: "(c) King's Printer for Ontario, 2025. Reproducible without permission for NON-COMMERCIAL purposes only and with no modifications - so nothing is reproduced here; this content is original and merely cites the guidance.",
+      },
+      {
+        organization: "Public Health Agency of Canada",
+        title: "Routine Practices and Additional Precautions for Preventing the Transmission of Infection in Healthcare Settings (2017 revision)",
+        url: "https://www.canada.ca/en/public-health/services/publications/diseases-conditions/routine-practices-precautions-healthcare-associated-infections/introduction.html",
+        accessed: "2026-09-09",
+        licence: "Crown copyright; Government of Canada terms. Paraphrased with attribution.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Clinical review of the hand-hygiene, PPE and sharps guidance against current provincial public-health direction.",
+    },
     lessons: [
       {
         titleEn: "Hand hygiene — the 4 moments",
@@ -420,6 +545,28 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Repérer et réduire les risques de chute au domicile du client, favoriser une mobilité sécuritaire et réagir en cas de chute alors que vous êtes seul.",
     durationMin: 25,
     passMark: 80,
+    citations: [
+      {
+        organization: "CNA Canada (CNA Financial - Risk Control bulletin)",
+        title: "Risk Control: Fall Prevention in the Home",
+        url: "https://www.cnacanada.ca/sites/default/files/2024-03/CNA-Canada-Fall-Prevention-in-Home.pdf",
+        accessed: "2026-09-09",
+        licence: "(c) 2019 CNA. All rights reserved. Written explicitly for PSWs. Paraphrased only. NOTE: the host is www.cnacanada.ca - the bare cnacanada.ca domain does not resolve.",
+      },
+      {
+        organization: "Public Health Agency of Canada",
+        title: "You CAN Prevent Falls! (date modified 2016-04-28)",
+        url: "https://www.canada.ca/en/public-health/services/health-promotion/aging-seniors/publications/publications-general-public/you-prevent-falls.html",
+        accessed: "2026-09-09",
+        licence: "Crown copyright; Government of Canada terms. Paraphrased with attribution.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Confirm the post-fall response steps match the agency's incident protocol - in particular when NOT to lift a fallen client.",
+    },
     lessons: [
       {
         titleEn: "Common fall hazards in the home",
@@ -504,6 +651,21 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Protéger les renseignements personnels et de santé des clients en soins à domicile — conformément à la LAPRPS (N.-B.) et à la LPRPDE — y compris les réalités de la famille, des téléphones et des espaces partagés.",
     durationMin: 25,
     passMark: 80,
+    citations: [
+      {
+        organization: "Office of the Privacy Commissioner of Canada",
+        title: "Privacy laws in Canada / PIPEDA guidance for organizations",
+        url: "https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/",
+        accessed: "2026-09-09",
+        licence: "Federal Crown content, Open Government Licence - Canada. Paraphrased with attribution.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Privacy-law review. The applicable health-privacy statute is PROVINCIAL and differs across the launch provinces: NB = Personal Health Information Privacy and Access Act (PHIPAA); NS = Personal Health Information Act (PHIA); PE = Health Information Act; NL = Personal Health Information Act (SNL 2008, c P-7.01). Ontario's PHIPA does NOT apply in any launch province. The lesson bodies are written statute-neutral; a reviewer should decide whether to add per-province specifics.",
+    },
     lessons: [
       {
         titleEn: "What counts as personal health information",
@@ -608,6 +770,21 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Gérer les réalités de conduite et d'horaire des soins à domicile — conditions hivernales, fatigue et planification sécuritaire des trajets entre les visites.",
     durationMin: 20,
     passMark: 80,
+    citations: [
+      {
+        organization: "Canadian Centre for Occupational Health and Safety",
+        title: "OSH Answers: Driving - Winter",
+        url: "https://www.ccohs.ca/oshanswers/safety_haz/drive/icesnow.html",
+        accessed: "2026-09-09",
+        licence: "CCOHS requires PRIOR PERMISSION to reproduce its material and forbids editorial changes to reproduced text. Nothing here is reproduced or adapted - the content is original and cites CCOHS as a reference. The working URL is /oshanswers/safety_haz/drive/icesnow.html.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Confirm against the agency's own travel, mileage and severe-weather policies.",
+    },
     lessons: [
       {
         titleEn: "Planning your route and buffer time",
@@ -694,6 +871,35 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Mécanique corporelle, transferts sécuritaires et utilisation des aides à la mobilité pour protéger le client et vous-même des blessures à domicile.",
     durationMin: 30,
     passMark: 80,
+    citations: [
+      {
+        organization: "Canadian Centre for Occupational Health and Safety",
+        title: "OSH Answers: Safe Patient Handling Program",
+        url: "https://www.ccohs.ca/oshanswers/hsprograms/patient_handling.html",
+        accessed: "2026-09-09",
+        licence: "CCOHS requires PRIOR PERMISSION to reproduce its material and forbids editorial changes to reproduced text. Nothing here is reproduced or adapted - the content is original and cites CCOHS as a reference.",
+      },
+      {
+        organization: "Canadian Centre for Occupational Health and Safety",
+        title: "OSH Answers: Back Injury Prevention",
+        url: "https://www.ccohs.ca/oshanswers/ergonomics/inj_prev.html",
+        accessed: "2026-09-09",
+        licence: "CCOHS requires PRIOR PERMISSION to reproduce its material and forbids editorial changes to reproduced text. Nothing here is reproduced or adapted - the content is original and cites CCOHS as a reference.",
+      },
+      {
+        organization: "Nova Scotia Department of Health and Wellness",
+        title: "Continuing Care Assistant (CCA) Scope of Practice & Competency Framework (approved May 2019)",
+        url: "https://novascotia.ca/dhw/ccs/documents/scope_of_practice_cca.pdf",
+        accessed: "2026-09-09",
+        licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Hands-on transfer technique cannot be certified by text alone - an SME must decide what in-person competency check accompanies this module.",
+    },
     lessons: [
       {
         titleEn: "Body mechanics and protecting your back",
@@ -817,6 +1023,22 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Comprendre la démence, communiquer avec soutien et réagir à la détresse ou aux comportements réactifs selon une approche centrée sur la personne et sans contention, à domicile.",
     durationMin: 35,
     passMark: 80,
+    citations: [
+      {
+        organization: "Nova Scotia Department of Health and Wellness",
+        title: "Continuing Care Assistant (CCA) Scope of Practice & Competency Framework (approved May 2019)",
+        url: "https://novascotia.ca/dhw/ccs/documents/scope_of_practice_cca.pdf",
+        accessed: "2026-09-09",
+        licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Clinical review by someone with dementia-care expertise.",
+      blocker: "WHO iSupport for Dementia (CC BY-NC-SA 3.0 IGO) is the strongest free source for this topic but was deliberately NOT used: the non-commercial licence is incompatible with a paid product without permission. Adaptation permission must be requested from whodementia@who.int before any iSupport-derived material enters this module. See docs/CONTENT_SOURCE_NOTES.md. The existing body predates that assessment and is NOT iSupport-derived.",
+    },
     lessons: [
       {
         titleEn: "Understanding dementia",
@@ -938,6 +1160,21 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Le rôle limité du préposé au soutien à domicile envers les médicaments — rappeler et aider dans les limites du champ de pratique, entreposage sécuritaire, observation des problèmes et la limite ferme à l'administration.",
     durationMin: 25,
     passMark: 80,
+    citations: [
+      {
+        organization: "Nova Scotia Department of Health and Wellness",
+        title: "Continuing Care Assistant (CCA) Scope of Practice & Competency Framework (approved May 2019)",
+        url: "https://novascotia.ca/dhw/ccs/documents/scope_of_practice_cca.pdf",
+        accessed: "2026-09-09",
+        licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "ORIGINAL",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "HIGH PRIORITY. No adequate free Canadian source exists for medication ASSISTANCE by unregulated home-support workers. This body is original authoring and needs a nurse or CCA sign-off on the assist-versus-administer line, which is set by provincial scope rules and by each agency's own delegation policy.",
+    },
     lessons: [
       {
         titleEn: "Assisting vs administering: know the line",
@@ -1059,6 +1296,28 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Reconnaître les signes de maltraitance ou de négligence envers un client adulte, comprendre votre responsabilité de signalement selon la politique et réagir de façon sécuritaire et respectueuse.",
     durationMin: 25,
     passMark: 80,
+    citations: [
+      {
+        organization: "Public Health Agency of Canada",
+        title: "How you can identify abuse and help older adults at risk (date modified 2017-05-19; French version published)",
+        url: "https://www.canada.ca/en/public-health/services/publications/health-risks-safety/how-identify-elder-abuse.html",
+        accessed: "2026-09-09",
+        licence: "Crown copyright; Government of Canada terms. Paraphrased with attribution.",
+      },
+      {
+        organization: "National Initiative for the Care of the Elderly (NICE)",
+        title: "Responding to Elder Abuse and Neglect: Factsheet for Personal Support Workers",
+        url: "https://www.nicenet.ca/tools/responding-to-elder-abuse-and-neglect-factsheet-for-personal-support-workers",
+        accessed: "2026-09-09",
+        unverified: "NOT VERIFIED. nicenet.ca returned HTTP 403 to automated fetch on 2026-09-09, so the factsheet's current text could not be read. The CNPEA hub page describing this toolset states the materials were current as of 2010-08-31 - treat as potentially stale. The claim that it is published in French was NOT confirmed. No content was drafted from it; the PHAC pages were used instead.",
+      },
+    ],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "SOURCED",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "Mandatory-reporting duties differ by province and by the client's living situation. A reviewer must confirm the reporting pathway named for each launch province before this is used as compliance training.",
+    },
     lessons: [
       {
         titleEn: "Types and signs of abuse and neglect",
@@ -1182,6 +1441,13 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       "Maintenir des limites professionnelles en tant qu'invité au domicile — cadeaux et argent, dynamique familiale, animaux et maintien d'une relation thérapeutique.",
     durationMin: 25,
     passMark: 80,
+    citations: [],
+    review: {
+      notice: STARTER_NOTICE,
+      enProvenance: "ORIGINAL",
+      frStatus: FR_MACHINE_DRAFT,
+      smeNeeds: "No Canadian source was found for this topic. Entirely original authoring - needs a home-care supervisor to confirm it matches real agency policy on boundaries, gifts and family conflict.",
+    },
     lessons: [
       {
         titleEn: "Professional boundaries as a guest",
