@@ -379,10 +379,14 @@ Open items, all tracked in [docs/CONTENT_SOURCE_NOTES.md](docs/CONTENT_SOURCE_NO
 - **Both BCcampus HCA OERs dropped** 2026-09-09 (one non-commercial, one viral
   ShareAlike). `convalescent-care-basics` lost its last substantive source and
   was reclassified SOURCED → ORIGINAL rather than left overstating its backing.
-- **⚠️ Seeding status is an open decision.** `seed:homecare` marks all 19
-  `PUBLISHED`, and `PUBLISHED` is what makes a module learner-visible in
-  `ModulesService`. Nothing is ready to promote, so this needs an owner call:
-  seed as `DRAFT`, or keep `PUBLISHED` for the demo. Left as-is pending that.
+- ~~Seeding status~~ — **closed 2026-09-09: keep `PUBLISHED`.** The starter
+  library is meant to be there by default; `DRAFT` would empty it in the demo
+  and prospect environments. The `STARTER CONTENT` tag is the mitigation.
+  **Follow-on, still open:** that tag is not rendered anywhere —
+  `regulatoryCitations` reaches the `getBySlug` payload only via an object
+  spread, `listForOrg` omits it, and no web code reads it. So the mitigation
+  for publishing unreviewed content is currently invisible to learners and
+  admins alike (docs/CONTENT_SOURCE_NOTES.md §4b).
 - Still outstanding from before: BYO/produced videos, per-province role rows /
   policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with

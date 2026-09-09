@@ -159,24 +159,36 @@ recorded in that module's `review.smeNeeds`.
 
 ---
 
-## 4b. ⚠️ Seeded modules are PUBLISHED, which means visible to learners
+## 4b. Seeded modules are PUBLISHED — decided, keep it
 
-Worth knowing before anyone treats "not ready to promote" as already handled.
+**Owner decision 2026-09-09: keep `PUBLISHED`. Settled, not an open item.**
 
 `seed-home-care.ts` creates every module with `status: ModuleStatus.PUBLISHED`
 and `orgId: null`. In `ModulesService`, `PUBLISHED` is exactly what gates
-learner visibility — `listForOrg` filters on it, and `getBySlug` 404s without
-it. So running `seed:homecare` puts all 19 unreviewed starter modules into
-every agency's visible library, assignable through `RequiredTraining`.
+learner visibility — `listForOrg` filters on it and `getBySlug` throws
+`NotFoundException` without it. So `seed:homecare` puts all 19 starter modules
+into every agency's visible library, assignable through `RequiredTraining`.
 
-This predates the Phase B expansion — the original 11 shipped the same way —
-but the expansion multiplies it. **Owner decision needed:** seed as `DRAFT` so
-nothing is learner-visible until reviewed, or keep `PUBLISHED` because the
-starter library is part of the demo and the disclaimer covers it. It was left
-as `PUBLISHED` pending that call, because flipping it silently would empty the
-library in the demo and prospect environments.
+That is intended. The starter library is meant to be there by default — it is
+what makes a fresh agency's Academy non-empty, and the demo and prospect
+environments depend on it. Seeding as `DRAFT` would empty the library until
+someone published each module by hand. The `STARTER CONTENT — SME REVIEW
+REQUIRED BEFORE COMPLIANCE USE` tag is the mitigation, not the module status.
 
----
+**Residual gap that decision leaves open — worth knowing:** the disclaimer is
+not actually shown to anyone.
+
+- `getBySlug` returns `{ ...module, lessons, quizUnlocked }`, so
+  `regulatoryCitations` — and with it `review.notice` — does reach the module
+  detail payload, but only incidentally, through the object spread.
+- `listForOrg` maps explicit fields and omits it entirely.
+- Nothing in `apps/web/src` reads `regulatoryCitations` at all.
+
+So a learner opening a starter module sees ordinary training with no indication
+it is unreviewed starter content, and an admin browsing the library sees the
+same. If the tag is the mitigation for shipping unreviewed content as
+`PUBLISHED`, it has to be visible to do that job. **Surfacing it in the UI is
+not built and is not tracked anywhere else — this note is the only record.**
 
 ## 5. Review pipeline — what has to happen next
 
@@ -190,7 +202,9 @@ library in the demo and prospect environments.
 4. **WHMIS positioning decision** — sourcing is closed (free government
    sources, §2.2); the education-vs-training positioning must be settled before
    that module is ever promoted.
-4b. **Seeding status** — decide `DRAFT` vs `PUBLISHED` (§4b).
+4b. ~~Seeding status~~ — **closed 2026-09-09: keep `PUBLISHED`** (§4b). The
+   follow-on, still open: the SME-review tag is not rendered anywhere, so the
+   mitigation for publishing unreviewed content is currently invisible.
 5. **NS CCA track review** by someone who knows the certification process, and
    a check that the May 2019 framework has not been superseded.
 6. Only then clear the `STARTER CONTENT` tag, module by module. **Nothing here
