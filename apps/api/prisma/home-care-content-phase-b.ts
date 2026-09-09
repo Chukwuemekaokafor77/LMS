@@ -61,17 +61,6 @@ const NS_CCA: SeedCitation = {
     "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
 };
 
-const BC_OER: SeedCitation = {
-  organization: "BCcampus / Thompson Rivers University",
-  title: "Personal Care Skills for Health Care Assistants, 2nd Edition",
-  url: "https://opentextbc.ca/hcalabtheoryandpractice/",
-  accessed: ACCESSED,
-  licence:
-    "Creative Commons non-commercial variant (CC BY-NC-SA) per the BCcampus catalogue - NOT CC BY 4.0 as originally assumed. Background reading only; no text adapted.",
-  unverified:
-    "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; the licence was read from the BCcampus catalogue listing and search metadata, not from the book's own licence page. Confirm the exact licence before adapting anything from it.",
-};
-
 const BC_SUPP: SeedCitation = {
   organization: "BCcampus",
   title:
@@ -141,7 +130,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Comment le vieillissement et la vie avec une incapacité changent réellement le quotidien, et comment soutenir un client sans prendre sa place.",
     durationMin: 30,
     passMark: 80,
-    citations: [BC_OER, BC_SUPP, NS_CCA],
+    citations: [BC_SUPP, NS_CCA],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -282,7 +271,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Soutenir un client en rétablissement à domicile après une chirurgie, une maladie ou une hospitalisation — ce qu'exige la convalescence et quels signaux d'alerte ne peuvent pas attendre.",
     durationMin: 30,
     passMark: 80,
-    citations: [BC_OER, BC_SUPP, PHO_IPAC],
+    citations: [BC_SUPP, PHO_IPAC],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -564,7 +553,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Communication pratique en visite à domicile : bien écouter, s'adapter aux changements auditifs, visuels, langagiers et cognitifs, gérer les conversations difficiles et transmettre clairement à l'équipe.",
     durationMin: 30,
     passMark: 80,
-    citations: [NS_CCA, BC_SUPP, BC_OER],
+    citations: [NS_CCA, BC_SUPP],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",

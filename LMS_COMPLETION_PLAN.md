@@ -365,9 +365,11 @@ Open items, all tracked in [docs/CONTENT_SOURCE_NOTES.md](docs/CONTENT_SOURCE_NO
   conservatively than the sourced ones.
 - **fr-CA bilingual QA of every French body** — all machine-drafted, flagged
   `MACHINE-DRAFTED — PENDING HUMAN BILINGUAL QA`. This *is* Phase E's open item.
-- **WHO iSupport permission** — CC BY-NC-SA 3.0 IGO, incompatible with a paid
-  product. Email `whodementia@who.int` or drop it. **Not sent; no content drafted
-  from it.**
+- ~~WHO iSupport permission~~ — **closed 2026-09-09: dropped by owner decision.**
+  CC BY-NC-SA 3.0 IGO; no permission sought and none will be. Nothing was drafted
+  from it, so no content changed — but the dementia module's remaining depth now
+  has to come from an SME. The BC non-commercial HCA OER and the unverifiable
+  2010 NICE factsheet were dropped in the same pass; a guard keeps all three out.
 - **WHMIS positioning decision** — WHMIS is the one genuine legal duty in the
   library. Recommendation: CCOHS's own $19.95 certificated course becomes the
   credential of record tracked via `StaffCertification` (Seam 3, like First

@@ -262,13 +262,40 @@ describe("starter library — §B0 positioning guardrails", () => {
     );
   });
 
-  // WHO iSupport is CC BY-NC-SA 3.0 IGO — non-commercial, so unusable in a paid
-  // product without permission. Nothing was drafted from it; this guard records
-  // that the module is still waiting on that decision so a later editor does
-  // not assume it was cleared.
-  it("keeps the dementia module's WHO-permission blocker until it is resolved", () => {
-    const dementia = ALL.find((m) => m.slug === "dementia-responsive-behaviours");
-    expect(dementia, "dementia module is missing").toBeDefined();
-    expect(dementia!.review?.blocker).toMatch(/whodementia@who\.int/i);
+  // Three sources were assessed and DROPPED by owner decision on 2026-09-09.
+  // Re-adding any of them is a licence or provenance regression, and each is
+  // exactly the kind of "strongest free source for this topic" that a future
+  // editor would rediscover and reach for. This guard is the memory.
+  it.each([
+    [
+      "WHO iSupport",
+      /isupport|whodementia|who\.int/i,
+      "CC BY-NC-SA 3.0 IGO — non-commercial, unusable in a paid product. No permission was sought and none will be.",
+    ],
+    [
+      "the BC HCA OER (Personal Care Skills)",
+      /hcalabtheoryandpractice/i,
+      "CC BY-NC-SA — non-commercial. The CC BY-SA HCA Program Supplement is still cited and is unaffected.",
+    ],
+    [
+      "the NICE PSW factsheet",
+      /nicenet/i,
+      "Could not be fetched, and the toolset dates to 2010. The PHAC elder-abuse pages carry this content instead.",
+    ],
+  ])("keeps %s dropped", (_name, pattern, why) => {
+    for (const m of ALL) {
+      for (const cite of m.citations ?? []) {
+        const hit =
+          pattern.test(cite.url) ||
+          pattern.test(cite.title) ||
+          pattern.test(cite.organization);
+        expect(hit, `${m.slug} re-cites a dropped source. ${why}`).toBe(false);
+      }
+      // A blocker naming a dropped source means the decision was reopened.
+      expect(
+        pattern.test(m.review?.blocker ?? ""),
+        `${m.slug} blocks on a dropped source. ${why}`,
+      ).toBe(false);
+    }
   });
 });

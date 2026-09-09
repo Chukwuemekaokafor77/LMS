@@ -115,14 +115,6 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
         licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
       },
       {
-        organization: "BCcampus / Thompson Rivers University",
-        title: "Personal Care Skills for Health Care Assistants, 2nd Edition",
-        url: "https://opentextbc.ca/hcalabtheoryandpractice/",
-        accessed: "2026-09-09",
-        licence: "Creative Commons non-commercial variant (CC BY-NC-SA) per the BCcampus catalogue - NOT CC BY 4.0 as originally assumed. Background reading only; no text adapted.",
-        unverified: "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; the licence was read from the BCcampus catalogue listing and search metadata, not from the book's own licence page. Confirm the exact licence before adapting anything from it.",
-      },
-      {
         organization: "BCcampus",
         title: "Health Care Assistant Program Supplement to the Provincial Curriculum 2023",
         url: "https://opentextbc.ca/hcasupplement/",
@@ -1036,8 +1028,7 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
       frStatus: FR_MACHINE_DRAFT,
-      smeNeeds: "Clinical review by someone with dementia-care expertise.",
-      blocker: "WHO iSupport for Dementia (CC BY-NC-SA 3.0 IGO) is the strongest free source for this topic but was deliberately NOT used: the non-commercial licence is incompatible with a paid product without permission. Adaptation permission must be requested from whodementia@who.int before any iSupport-derived material enters this module. See docs/CONTENT_SOURCE_NOTES.md. The existing body predates that assessment and is NOT iSupport-derived.",
+      smeNeeds: "Clinical review by someone with dementia-care expertise. WHO iSupport for Dementia was assessed as a source and DROPPED by owner decision on 2026-09-09 (CC BY-NC-SA 3.0 IGO, incompatible with a paid product); no permission was sought and none will be. Do not reintroduce it. This body was never iSupport-derived, so the depth this module still needs must come from an SME.",
     },
     lessons: [
       {
@@ -1304,19 +1295,12 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
         accessed: "2026-09-09",
         licence: "Crown copyright; Government of Canada terms. Paraphrased with attribution.",
       },
-      {
-        organization: "National Initiative for the Care of the Elderly (NICE)",
-        title: "Responding to Elder Abuse and Neglect: Factsheet for Personal Support Workers",
-        url: "https://www.nicenet.ca/tools/responding-to-elder-abuse-and-neglect-factsheet-for-personal-support-workers",
-        accessed: "2026-09-09",
-        unverified: "NOT VERIFIED. nicenet.ca returned HTTP 403 to automated fetch on 2026-09-09, so the factsheet's current text could not be read. The CNPEA hub page describing this toolset states the materials were current as of 2010-08-31 - treat as potentially stale. The claim that it is published in French was NOT confirmed. No content was drafted from it; the PHAC pages were used instead.",
-      },
     ],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
       frStatus: FR_MACHINE_DRAFT,
-      smeNeeds: "Mandatory-reporting duties differ by province and by the client's living situation. A reviewer must confirm the reporting pathway named for each launch province before this is used as compliance training.",
+      smeNeeds: "Mandatory-reporting duties differ by province and by the client's living situation. A reviewer must confirm the reporting pathway named for each launch province before this is used as compliance training. The NICE PSW factsheet was DROPPED by owner decision on 2026-09-09 (could not be fetched; its toolset dates to 2010) - this content was drafted from the PHAC pages and is unaffected.",
     },
     lessons: [
       {
