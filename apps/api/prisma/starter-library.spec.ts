@@ -273,9 +273,9 @@ describe("starter library — §B0 positioning guardrails", () => {
       "CC BY-NC-SA 3.0 IGO — non-commercial, unusable in a paid product. No permission was sought and none will be.",
     ],
     [
-      "the BC HCA OER (Personal Care Skills)",
-      /hcalabtheoryandpractice/i,
-      "CC BY-NC-SA — non-commercial. The CC BY-SA HCA Program Supplement is still cited and is unaffected.",
+      "both BC HCA OERs",
+      /hcalabtheoryandpractice|hcasupplement|BCcampus/i,
+      "Personal Care Skills is CC BY-NC-SA (non-commercial); the HCA Program Supplement is CC BY-SA (viral ShareAlike). Both dropped by owner decision.",
     ],
     [
       "the NICE PSW factsheet",

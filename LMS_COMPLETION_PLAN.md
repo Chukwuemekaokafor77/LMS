@@ -370,11 +370,19 @@ Open items, all tracked in [docs/CONTENT_SOURCE_NOTES.md](docs/CONTENT_SOURCE_NO
   from it, so no content changed — but the dementia module's remaining depth now
   has to come from an SME. The BC non-commercial HCA OER and the unverifiable
   2010 NICE factsheet were dropped in the same pass; a guard keeps all three out.
-- **WHMIS positioning decision** — WHMIS is the one genuine legal duty in the
-  library. Recommendation: CCOHS's own $19.95 certificated course becomes the
-  credential of record tracked via `StaffCertification` (Seam 3, like First
-  Aid/CPR), and our module stays awareness/refresher covering the *education*
-  half only — the agency still owes product-specific *training*.
+- **WHMIS** — sourcing closed 2026-09-09: free government sources exist
+  (Health Canada, ESDC, and the WCB PEI guide from a launch province), so the
+  module is re-sourced onto those and no longer routes agencies to a paid
+  vendor course. Positioning is still open: WHMIS is the one genuine legal duty
+  in the library, and the module covers the *education* half only — the agency
+  still owes workplace- and product-specific *training*.
+- **Both BCcampus HCA OERs dropped** 2026-09-09 (one non-commercial, one viral
+  ShareAlike). `convalescent-care-basics` lost its last substantive source and
+  was reclassified SOURCED → ORIGINAL rather than left overstating its backing.
+- **⚠️ Seeding status is an open decision.** `seed:homecare` marks all 19
+  `PUBLISHED`, and `PUBLISHED` is what makes a module learner-visible in
+  `ModulesService`. Nothing is ready to promote, so this needs an owner call:
+  seed as `DRAFT`, or keep `PUBLISHED` for the demo. Left as-is pending that.
 - Still outstanding from before: BYO/produced videos, per-province role rows /
   policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with

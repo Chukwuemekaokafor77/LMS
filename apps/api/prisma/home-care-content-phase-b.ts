@@ -61,18 +61,6 @@ const NS_CCA: SeedCitation = {
     "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
 };
 
-const BC_SUPP: SeedCitation = {
-  organization: "BCcampus",
-  title:
-    "Health Care Assistant Program Supplement to the Provincial Curriculum 2023",
-  url: "https://opentextbc.ca/hcasupplement/",
-  accessed: ACCESSED,
-  licence:
-    "CC BY-SA 4.0 - commercial use permitted, but ShareAlike is viral. Background reading only; nothing adapted.",
-  unverified:
-    "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; licence read from search metadata rather than the licence page.",
-};
-
 const PHO_IPAC: SeedCitation = {
   organization: "Public Health Ontario",
   title:
@@ -92,21 +80,33 @@ const CCOHS_ALONE_PT: SeedCitation = {
   licence: CCOHS_REUSE,
 };
 
-const CCOHS_WHMIS_ED: SeedCitation = {
-  organization: "Canadian Centre for Occupational Health and Safety",
-  title: "OSH Answers: WHMIS - Education and Training",
-  url: "https://www.ccohs.ca/oshanswers/chemicals/whmis_ghs/education_training.html",
-  accessed: ACCESSED,
-  licence: CCOHS_REUSE,
-};
-
-const CCOHS_WHMIS_COURSE: SeedCitation = {
-  organization: "Canadian Centre for Occupational Health and Safety",
-  title: "WHMIS for Workers (e-course) - CAD $19.95 per seat, 90 days access",
-  url: "https://www.ccohs.ca/products/courses/whmis_workers",
+const HC_WHMIS: SeedCitation = {
+  organization: "Health Canada",
+  title:
+    "Workplace Hazardous Materials Information System (WHMIS) (date modified 2025-12-15; French version published)",
+  url: "https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system.html",
   accessed: ACCESSED,
   licence:
-    "Paid CCOHS course issuing its own printable certificate of completion. Referenced as the recommended external credential - this module does NOT replicate it.",
+    "Federal Crown content. Canada.ca terms permit NON-commercial reproduction with attribution; COMMERCIAL reproduction needs prior written permission - so nothing is reproduced here. Paraphrased with attribution.",
+};
+
+const ESDC_WHMIS: SeedCitation = {
+  organization: "Employment and Social Development Canada",
+  title:
+    "Workplace Hazardous Materials Information System 2015 - Applies to workplaces under federal and provincial or territorial regulation (date modified 2022-09-09; French version published)",
+  url: "https://www.canada.ca/en/employment-social-development/services/health-safety/prevention/whmis.html",
+  accessed: ACCESSED,
+  licence:
+    "Federal Crown content, same Canada.ca terms as above. This is the page that states the two-part duty plainly: general education to understand pictograms, labels and SDSs, PLUS education and training for the safe storage, handling and use of the hazardous products actually in the workplace.",
+};
+
+const WCB_PEI_WHMIS: SeedCitation = {
+  organization: "Workers Compensation Board of Prince Edward Island",
+  title: "WHMIS 2015: Guide for Employers and Workers",
+  url: "https://www.wcb.pe.ca/DocumentManagement/Document/pub_whmis2015guideforemployersandemployees.pdf",
+  accessed: ACCESSED,
+  licence:
+    "Free provincial government guidance from a launch province, and it names worksite-specific training as a distinct employer duty. Note its own provenance: the guide states it is adapted from WHMIS-after-GHS fact sheets developed by CCOHS with Health Canada, and adapted with permission of WorkSafeNB - so citing it does not escape CCOHS provenance. Paraphrased only; nothing reproduced.",
 };
 
 const OPC: SeedCitation = {
@@ -130,7 +130,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Comment le vieillissement et la vie avec une incapacité changent réellement le quotidien, et comment soutenir un client sans prendre sa place.",
     durationMin: 30,
     passMark: 80,
-    citations: [BC_SUPP, NS_CCA],
+    citations: [NS_CCA],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -271,13 +271,17 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Soutenir un client en rétablissement à domicile après une chirurgie, une maladie ou une hospitalisation — ce qu'exige la convalescence et quels signaux d'alerte ne peuvent pas attendre.",
     durationMin: 30,
     passMark: 80,
-    citations: [BC_SUPP, PHO_IPAC],
+    citations: [PHO_IPAC],
     review: {
       notice: STARTER_NOTICE,
-      enProvenance: "SOURCED",
+      // Downgraded from SOURCED on 2026-09-09: both BC health-care-assistant
+      // OERs were dropped, and the one remaining citation only covers the
+      // infection-adjacent parts. The post-discharge risk, warning-sign and
+      // reconditioning content now has no source behind it.
+      enProvenance: "ORIGINAL",
       frStatus: FR_MACHINE_DRAFT,
       smeNeeds:
-        "A nurse must confirm the warning-sign list and the wound/incision boundaries. The line between 'observe and report' and 'do not touch' is the whole safety story in this module and it is scope-sensitive.",
+        "HIGH PRIORITY, and higher than when this was first written. A nurse must confirm the warning-sign list and the wound/incision boundaries - the line between 'observe and report' and 'do not touch' is the whole safety story here and it is scope-sensitive. This is now ORIGINAL authoring: the BC health-care-assistant OERs that backed it were dropped, so a reviewer is checking authored clinical claims rather than fact-checking against a citation.",
     },
     lessons: [
       {
@@ -412,7 +416,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Les soins centrés sur la personne comme philosophie de travail : connaître la personne, partager le contrôle, soutenir le choix et gérer les moments où choix et sécurité s'opposent.",
     durationMin: 30,
     passMark: 80,
-    citations: [NS_CCA, BC_SUPP],
+    citations: [NS_CCA],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -553,7 +557,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Communication pratique en visite à domicile : bien écouter, s'adapter aux changements auditifs, visuels, langagiers et cognitifs, gérer les conversations difficiles et transmettre clairement à l'équipe.",
     durationMin: 30,
     passMark: 80,
-    citations: [NS_CCA, BC_SUPP],
+    citations: [NS_CCA],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -973,7 +977,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       "Sensibilisation générale au SIMDUT pour le personnel manipulant des produits de nettoyage et des produits chimiques au domicile des clients — pictogrammes, étiquettes, fiches de données de sécurité, et pourquoi ce module ne représente que la moitié de ce qu'exige la loi.",
     durationMin: 25,
     passMark: 80,
-    citations: [CCOHS_WHMIS_ED, CCOHS_WHMIS_COURSE],
+    citations: [ESDC_WHMIS, HC_WHMIS, WCB_PEI_WHMIS],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
@@ -981,7 +985,7 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
       smeNeeds:
         "An OHS-competent reviewer must confirm the awareness content and, more importantly, confirm the positioning: this module covers the transferable EDUCATION half only. It cannot satisfy the employer's workplace- and product-specific TRAINING duty, which by law must be delivered by the agency for the actual products in use.",
       blocker:
-        "POSITIONING DECISION REQUIRED BEFORE PROMOTION. Unlike everything else in this library, WHMIS education/training is a genuine legal duty in every Canadian jurisdiction - so a starter module carries a real risk of an agency ticking it off as done. Recommendation (see docs/CONTENT_SOURCE_NOTES.md): treat CCOHS's own certificated 'WHMIS for Workers' course (CAD $19.95/seat) as the credential of record, tracked externally via StaffCertification (Seam 3) like First Aid/CPR, and keep this module as pre-course awareness and annual refresher only. Copyright is NOT the constraint - CCOHS terms bar reproducing their text, which this module does not do; the regulatory duty is.",
+        "POSITIONING, NOT SOURCING. Free, authoritative WHMIS sources do exist and this module is now built on them (Health Canada, ESDC, and the WCB PEI guide from a launch province), so no paid course is required to source it. The open question is different: WHMIS education/training is the one GENUINE LEGAL DUTY in this library, and a starter module invites an agency to tick it off as done. This module covers the transferable EDUCATION half only and cannot satisfy the employer's workplace- and product-specific TRAINING duty. Nothing in this library is ready to promote, so the decision is not urgent - but it must be settled before this one ever is.",
     },
     lessons: [
       {
@@ -1012,9 +1016,9 @@ export const HOME_CARE_PHASE_B_MODULES: HomeCareModule[] = [
         titleEn: "What this module does not cover",
         titleFr: "Ce que ce module ne couvre pas",
         bodyEn:
-          "Read this lesson carefully, because it is the one that keeps your agency out of trouble. Every Canadian jurisdiction requires an employer to provide a WHMIS programme with two distinct halves. The first is education: the general, transferable knowledge of how the system works — pictograms, labels, safety data sheets — which is what this module gives you. The second is training: the site- and job-specific instruction covering the actual products you will use, how to store, handle and dispose of them here, what personal protective equipment to use, and what to do about a spill or an emergency in this particular workplace.\n\nThis module delivers the first half only. It cannot deliver the second, because a generic module cannot know what is under a particular client's sink. Completing it does not make anyone WHMIS-trained, and an agency that treats it as the whole requirement has not met its legal duty.\n\nSo treat this as awareness and refresher content, and get the rest from where it belongs. Your agency must give you product-specific instruction for the products it asks you to use, and must review its programme at least annually or whenever products, processes or hazard information change. Where your agency wants an independently certificated course, CCOHS runs its own WHMIS for Workers course that issues a certificate of completion; that certificate is recorded like First Aid or CPR — as an external credential with an expiry date — rather than being replaced by this module.",
+          "Read this lesson carefully, because it is the one that keeps your agency out of trouble. Every Canadian jurisdiction requires an employer to provide a WHMIS programme with two distinct halves. The first is education: the general, transferable knowledge of how the system works — pictograms, labels, safety data sheets — which is what this module gives you. The second is training: the site- and job-specific instruction covering the actual products you will use, how to store, handle and dispose of them here, what personal protective equipment to use, and what to do about a spill or an emergency in this particular workplace.\n\nThis module delivers the first half only. It cannot deliver the second, because a generic module cannot know what is under a particular client's sink. Completing it does not make anyone WHMIS-trained, and an agency that treats it as the whole requirement has not met its legal duty.\n\nSo treat this as awareness and refresher content, and get the rest from where it belongs. Your agency must give you product-specific instruction for the products it asks you to use, and must review its programme at least annually or whenever products, processes or hazard information change. You are also entitled to go and read the rules yourself: Health Canada and Employment and Social Development Canada both publish WHMIS guidance free, in English and French, and your provincial workers' compensation board publishes a plain-language guide for employers and workers. If your agency chooses to use an independently certificated WHMIS course as its record, that certificate is tracked like First Aid or CPR — an external credential with an expiry date — rather than being replaced by this module.",
         bodyFr:
-          "Lisez cette leçon attentivement, car c'est celle qui protège votre agence. Toutes les autorités canadiennes exigent que l'employeur offre un programme SIMDUT comportant deux volets distincts. Le premier est l'éducation : la connaissance générale et transférable du fonctionnement du système — pictogrammes, étiquettes, fiches de données de sécurité —, soit ce que ce module vous donne. Le second est la formation : les directives propres au lieu et à l'emploi, portant sur les produits réellement utilisés, leur entreposage, leur manipulation et leur élimination ici, l'équipement de protection à porter et la conduite à tenir en cas de déversement ou d'urgence dans ce milieu précis.\n\nCe module ne livre que le premier volet. Il ne peut livrer le second, car un module générique ne peut pas savoir ce qui se trouve sous l'évier d'un client donné. Le réussir ne rend personne « formé SIMDUT », et une agence qui y verrait l'ensemble de l'exigence n'aurait pas rempli son obligation légale.\n\nConsidérez donc ceci comme du contenu de sensibilisation et de rappel, et obtenez le reste là où il se trouve. Votre agence doit vous donner des directives propres aux produits qu'elle vous demande d'utiliser et doit revoir son programme au moins une fois par année ou chaque fois que les produits, les procédés ou l'information sur les dangers changent. Si votre agence souhaite un cours certifié de façon indépendante, le CCHST offre son propre cours SIMDUT pour les travailleurs, qui délivre une attestation de réussite; cette attestation est consignée comme le secourisme ou la RCR — un titre externe avec date d'expiration — plutôt que remplacée par ce module.",
+          "Lisez cette leçon attentivement, car c'est celle qui protège votre agence. Toutes les autorités canadiennes exigent que l'employeur offre un programme SIMDUT comportant deux volets distincts. Le premier est l'éducation : la connaissance générale et transférable du fonctionnement du système — pictogrammes, étiquettes, fiches de données de sécurité —, soit ce que ce module vous donne. Le second est la formation : les directives propres au lieu et à l'emploi, portant sur les produits réellement utilisés, leur entreposage, leur manipulation et leur élimination ici, l'équipement de protection à porter et la conduite à tenir en cas de déversement ou d'urgence dans ce milieu précis.\n\nCe module ne livre que le premier volet. Il ne peut livrer le second, car un module générique ne peut pas savoir ce qui se trouve sous l'évier d'un client donné. Le réussir ne rend personne « formé SIMDUT », et une agence qui y verrait l'ensemble de l'exigence n'aurait pas rempli son obligation légale.\n\nConsidérez donc ceci comme du contenu de sensibilisation et de rappel, et obtenez le reste là où il se trouve. Votre agence doit vous donner des directives propres aux produits qu'elle vous demande d'utiliser et doit revoir son programme au moins une fois par année ou chaque fois que les produits, les procédés ou l'information sur les dangers changent. Vous avez aussi le droit d'aller lire les règles vous-même : Santé Canada et Emploi et Développement social Canada publient gratuitement de l'information sur le SIMDUT, en français et en anglais, et la commission des accidents du travail de votre province publie un guide en langage clair pour les employeurs et les travailleurs. Si votre agence choisit d'utiliser un cours SIMDUT certifié de façon indépendante comme dossier officiel, cette attestation est suivie comme le secourisme ou la RCR — un titre externe avec date d'expiration — plutôt que remplacée par ce module.",
       },
     ],
     questions: [

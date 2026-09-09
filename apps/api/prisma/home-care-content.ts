@@ -114,20 +114,12 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
         accessed: "2026-09-09",
         licence: "Copyright (c) All Rights Reserved, NS DHW 2019 - no open licence. Cited and paraphrased only; no text reproduced.",
       },
-      {
-        organization: "BCcampus",
-        title: "Health Care Assistant Program Supplement to the Provincial Curriculum 2023",
-        url: "https://opentextbc.ca/hcasupplement/",
-        accessed: "2026-09-09",
-        licence: "CC BY-SA 4.0 - commercial use permitted, but ShareAlike is viral. Background reading only; nothing adapted.",
-        unverified: "opentextbc.ca returned HTTP 403 to automated fetch on 2026-09-09; licence read from search metadata rather than the licence page.",
-      },
     ],
     review: {
       notice: STARTER_NOTICE,
       enProvenance: "SOURCED",
       frStatus: FR_MACHINE_DRAFT,
-      smeNeeds: "Confirm the scope-of-practice boundaries described here match each agency's own assignment/delegation policy. NB, PE and NL have no province-wide home-support scope document (B0 Finding 1), so the NS CCA framework is used as the nearest authoritative Canadian articulation - an SME must confirm it generalises fairly outside NS.",
+      smeNeeds: "Confirm the scope-of-practice boundaries described here match each agency's own assignment/delegation policy. NB, PE and NL have no province-wide home-support scope document (B0 Finding 1), so the NS CCA framework is used as the nearest authoritative Canadian articulation - an SME must confirm it generalises fairly outside NS. Both BC health-care-assistant OERs were DROPPED by owner decision (2026-09-09), so the NS framework is now the only source behind this module.",
     },
     lessons: [
       {
@@ -649,7 +641,7 @@ export const HOME_CARE_MODULES: HomeCareModule[] = [
         title: "Privacy laws in Canada / PIPEDA guidance for organizations",
         url: "https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/",
         accessed: "2026-09-09",
-        licence: "Federal Crown content, Open Government Licence - Canada. Paraphrased with attribution.",
+        licence: "Federal Crown content. Canada.ca terms permit NON-commercial reproduction with attribution; COMMERCIAL reproduction needs prior written permission - so nothing is reproduced here. Paraphrased with attribution.",
       },
     ],
     review: {

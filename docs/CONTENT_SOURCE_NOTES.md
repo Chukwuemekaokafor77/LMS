@@ -26,7 +26,8 @@ any source.** That was not a stylistic choice — it is what the licences force:
 | Public Health Ontario IPAC manual | Reproducible **non-commercially only**, no modifications | Maple Care is a paid product → cite only. |
 | NS CCA Scope of Practice | "Copyright © All Rights Reserved", NS DHW 2019 | Cite competency names; paraphrase everything else. |
 | CNA Canada fall-prevention bulletin | "© 2019 CNA. All rights reserved." | Cite only. |
-| BC *HCA Program Supplement 2023* | CC BY-SA 4.0 | Commercial OK but ShareAlike is viral → adapting would force us to relicense our lessons. |
+| Health Canada / ESDC / PHAC (canada.ca) | **Non-commercial** reproduction free with attribution; **commercial** reproduction needs prior written permission | Not blanket Open Government Licence, as previously stated here in error. Cite only. |
+| WCB PEI WHMIS guide | Free provincial guidance, itself adapted from CCOHS + Health Canada fact sheets | Cite only; citing it does not escape CCOHS provenance. |
 | PHAC / Health Canada pages | Crown copyright, Government of Canada terms | The most permissive sources we have; still paraphrased with attribution. |
 
 Citations live in `Module.regulatoryCitations.sources` as
@@ -57,47 +58,40 @@ is for traceability, not permission to quote.**
   or reopens a blocker on it, because this is exactly the source a future
   editor would rediscover and reach for.
 
-### 2.2 WHMIS 2015 — build vs. direct to CCOHS
+### 2.2 WHMIS 2015 — sourcing settled, positioning still open
 
-The brief asked which is lower-risk. Having read CCOHS's terms, **copyright is
-not the deciding factor** — CCOHS's terms restrict *reproducing* their text,
-which we do not do. The deciding factor is regulatory.
+**Sourcing: settled 2026-09-09. Free, authoritative sources exist, so the
+module stays and no paid course is needed to source it.** Verified live:
 
-What was confirmed:
+| Source | Notes |
+| --- | --- |
+| Health Canada, *Workplace Hazardous Materials Information System (WHMIS)* | mod. 2025-12-15, French version published |
+| ESDC, *WHMIS 2015 — Applies to workplaces under federal and provincial or territorial regulation* | mod. 2022-09-09, French published. States the two-part duty plainly. |
+| WCB PEI, *WHMIS 2015: Guide for Employers and Workers* | Free guidance from a **launch province**; names worksite-specific training as a distinct employer duty. Self-declares as adapted from CCOHS + Health Canada fact sheets, with WorkSafeNB permission — so citing it does not escape CCOHS provenance. |
 
-- WHMIS worker education/training is a **genuine legal duty in every Canadian
-  jurisdiction** — unlike everything else in this library, which is
-  employer-defined best practice (§B0 Finding 1).
-- The duty has **two halves**: *education* (general, transferable — pictograms,
-  labels, SDSs; can be delivered online) and *training* (**site- and
-  product-specific**, delivered by the employer for the actual products in use).
-- A generic online course satisfies the first half only. Employers must also
-  review the programme at least annually or when products/processes/hazard
-  information change.
-- CCOHS sells its own **WHMIS for Workers** e-course: **CAD $19.95/seat, 90
-  days' access, printable certificate of completion**
-  (<https://www.ccohs.ca/products/courses/whmis_workers>).
+The module was re-sourced onto these and the CCOHS citations were removed. The
+lesson text no longer routes agencies to a paid vendor course; it points at the
+free federal and provincial guidance and at the agency's own duty.
 
-**Recommendation (split, not either/or):**
+**Positioning: still open, but no longer urgent.** WHMIS education/training is
+the one **genuine legal duty** in this library — everything else is
+employer-defined best practice (§B0 Finding 1). The duty has two halves:
 
-1. **Credential of record → CCOHS's course, tracked externally.** For agencies
-   that want a defensible, independently certificated WHMIS record, direct them
-   to the CCOHS course and track that certificate with its expiry in
-   ElderCare's `StaffCertification` (Seam 3) — exactly like First Aid/CPR under
-   §B0 Finding 3. We are not better placed than CCOHS to issue this, and the
-   $19.95 price makes rebuilding it poor value.
-2. **Keep `whmis-2015-home-care` as awareness + refresher only.** It ships as
-   the general-education half, framed for the home-care setting (client-owned
-   consumer products, unlabelled bottles under the sink, bleach + ammonia), with
-   a whole lesson — *"What this module does not cover"* — stating that it is
-   half the legal requirement and that the agency still owes product-specific
-   training. That lesson is load-bearing and must not be trimmed.
-3. **Neither replaces the agency's own site-specific training.** Nothing we ship
-   can, because we cannot know what is under a given client's sink.
+- **Education** — general and transferable (pictograms, labels, SDSs). This is
+  what the module delivers, and it can be delivered online.
+- **Training** — **workplace- and product-specific**, delivered by the employer
+  for the products actually in use, reviewed at least annually or whenever
+  products, processes or hazard information change. Nothing we ship can satisfy
+  this, because we cannot know what is under a given client's sink.
 
-**The real risk to manage is mis-ticking**, not copyright: an agency marking
-WHMIS "done" off a starter module. That is why this module carries a
-`review.blocker` requiring a positioning decision before it is promoted.
+The risk to manage is **mis-ticking**: an agency marking WHMIS "done" off a
+starter module. The mitigation is the lesson *"What this module does not
+cover"*, which is load-bearing and guarded by a test. If an agency wants an
+independently certificated record, that certificate is tracked externally via
+`StaffCertification` (Seam 3) like First Aid/CPR — not replaced by this module.
+
+Since **nothing in this library is ready to promote**, this decision can wait —
+but it must be settled before this module ever is.
 
 ### 2.3 Solo Emergency Response — possible partnership ask
 
@@ -123,20 +117,16 @@ Removed from the citation lists entirely. The guard in
 | --- | --- | --- |
 | **WHO iSupport for Dementia** | CC BY-NC-SA 3.0 IGO (non-commercial); permission dependency declined — see §2.1 | None. Nothing was drafted from it. The dementia module needs SME depth instead. |
 | **BC OER, *Personal Care Skills for Health Care Assistants* (`opentextbc.ca/hcalabtheoryandpractice`)** | CC BY-**NC**-SA — non-commercial, so unusable in a paid product. (The brief's "CC BY 4.0" was wrong.) Licence could only be read from catalogue metadata; the site 403s. | Was background reading only, never adapted. Affected modules keep the NS CCA framework, the CC BY-SA HCA Supplement and PHO as their citations. |
+| **BCcampus, *HCA Program Supplement to the Provincial Curriculum 2023*** | CC BY-SA 4.0 — commercial use permitted, but ShareAlike is viral. Dropped by owner decision to keep the library free of copyleft exposure. | Was background reading only, never adapted. **`convalescent-care-basics` lost its last substantive source and was reclassified SOURCED → ORIGINAL** rather than left with a citation that does not carry the body. |
 | **NICE, *Responding to Elder Abuse and Neglect: Factsheet for PSWs*** | `nicenet.ca` 403s so the text could never be read, and the CNPEA hub dates the toolset to **2010-08-31**. Its claimed French edition was never confirmed. | None. `recognizing-reporting-abuse` was drafted from the PHAC elder-abuse pages, which are live, Crown/OGL and published in French. |
 
-> The **BCcampus *HCA Program Supplement to the Provincial Curriculum 2023*** is
-> a different resource and is **still cited**. It is **CC BY-SA 4.0** — commercial
-> use is permitted. ShareAlike never triggers here because nothing was adapted
-> from it; it informed original prose. Drop it too if that margin is unwanted.
 
 ### 3.2 Still cited, but not fully verified
 
 | Source | What is unverified |
 | --- | --- |
-| **BCcampus *HCA Program Supplement 2023*** | `opentextbc.ca` returned **HTTP 403** to automated fetch on 2026-09-09. The CC BY-SA 4.0 licence was read from search metadata, not from the licence page. Confirm before adapting anything from it. |
 | **NS CCA framework in French** | Only the **English** PDF was retrieved and read. A French edition of the *Scope of Practice & Competency Framework* was **not** confirmed. |
-| **eCampusOntario "communication in healthcare" OER** | No specific matching title was found in the Open Library. `client-communication` cites the NS framework and the HCA Supplement instead. |
+| **eCampusOntario "communication in healthcare" OER** | No specific matching title was found in the Open Library. `client-communication` now cites the NS CCA framework alone. |
 | **`cnacanada.ca` (bare domain)** | Does **not resolve** (DNS failure). The working host is **`www.cnacanada.ca`** — the citation records this. |
 
 Sources confirmed live on 2026-09-09: NS CCA framework (May 2019); PHO IPAC for
@@ -169,6 +159,25 @@ recorded in that module's `review.smeNeeds`.
 
 ---
 
+## 4b. ⚠️ Seeded modules are PUBLISHED, which means visible to learners
+
+Worth knowing before anyone treats "not ready to promote" as already handled.
+
+`seed-home-care.ts` creates every module with `status: ModuleStatus.PUBLISHED`
+and `orgId: null`. In `ModulesService`, `PUBLISHED` is exactly what gates
+learner visibility — `listForOrg` filters on it, and `getBySlug` 404s without
+it. So running `seed:homecare` puts all 19 unreviewed starter modules into
+every agency's visible library, assignable through `RequiredTraining`.
+
+This predates the Phase B expansion — the original 11 shipped the same way —
+but the expansion multiplies it. **Owner decision needed:** seed as `DRAFT` so
+nothing is learner-visible until reviewed, or keep `PUBLISHED` because the
+starter library is part of the demo and the disclaimer covers it. It was left
+as `PUBLISHED` pending that call, because flipping it silently would empty the
+library in the demo and prospect environments.
+
+---
+
 ## 5. Review pipeline — what has to happen next
 
 1. **SME review, every module.** Priority order: `solo-emergency-response`
@@ -178,8 +187,10 @@ recorded in that module's `review.smeNeeds`.
    draft. This is Phase E's open "bilingual fr-CA QA" item.
 3. ~~WHO decision~~ — **closed 2026-09-09: iSupport dropped** (§2.1). The
    dementia module now needs SME-authored depth rather than a source.
-4. **WHMIS positioning decision** — confirm the split in §2.2 before promoting
-   that module.
+4. **WHMIS positioning decision** — sourcing is closed (free government
+   sources, §2.2); the education-vs-training positioning must be settled before
+   that module is ever promoted.
+4b. **Seeding status** — decide `DRAFT` vs `PUBLISHED` (§4b).
 5. **NS CCA track review** by someone who knows the certification process, and
    a check that the May 2019 framework has not been superseded.
 6. Only then clear the `STARTER CONTENT` tag, module by module. **Nothing here
