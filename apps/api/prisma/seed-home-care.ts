@@ -1,11 +1,26 @@
-import { PrismaClient, ModuleStatus } from "@prisma/client";
-import { HOME_CARE_MODULES } from "./home-care-content";
+import { PrismaClient, ModuleStatus, Jurisdiction } from "@prisma/client";
+import { HOME_CARE_MODULES, type HomeCareModule } from "./home-care-content";
+import { HOME_CARE_PHASE_B_MODULES } from "./home-care-content-phase-b";
+
+/** The whole starter library: the original 11 plus the Phase B expansion.
+ *  One list so the loop below, and the counts it prints, stay honest. */
+const ALL_MODULES: HomeCareModule[] = [
+  ...HOME_CARE_MODULES,
+  ...HOME_CARE_PHASE_B_MODULES,
+];
 
 /**
  * Seeds the home-care STARTER LIBRARY as global modules (orgId = null,
- * jurisdiction = null, PUBLISHED). Idempotent — safe to re-run. Agencies get
+ * PUBLISHED). Jurisdiction is null (cross-province best practice) for every
+ * module except the NS CCA prep track. Idempotent — safe to re-run. Agencies get
  * these by default and extend/replace them via the authoring UI (BYO content).
  * See home-care-content.ts for the positioning caveat (starter, SME-review).
+ *
+ * Each module also writes its sources and review state to
+ * `Module.regulatoryCitations` as { sources, review }, so the
+ * SME-review-required disclaimer and the machine-drafted-French flag travel
+ * with the row rather than living only in the content file's header. Nothing
+ * reads that JSON yet -- it is there for the human review pass and for audit.
  */
 const prisma = new PrismaClient();
 
@@ -48,7 +63,16 @@ async function seedRoles() {
 async function main() {
   const roleCount = await seedRoles();
 
-  for (const m of HOME_CARE_MODULES) {
+  for (const m of ALL_MODULES) {
+    // Province-scoped only for the NS CCA prep track; everything else is
+    // cross-jurisdiction best practice (LMS_COMPLETION_PLAN.md B0 Finding 1).
+    const jurisdiction = m.jurisdiction
+      ? Jurisdiction[m.jurisdiction]
+      : null;
+    const regulatoryCitations =
+      m.citations || m.review
+        ? { sources: m.citations ?? [], review: m.review ?? null }
+        : undefined;
     const mod = await prisma.module.upsert({
       where: { slug: m.slug },
       update: {
@@ -57,6 +81,8 @@ async function main() {
         descriptionEn: m.descriptionEn,
         descriptionFr: m.descriptionFr,
         durationMin: m.durationMin,
+        jurisdiction,
+        regulatoryCitations,
       },
       create: {
         slug: m.slug,
@@ -66,7 +92,8 @@ async function main() {
         descriptionEn: m.descriptionEn,
         descriptionFr: m.descriptionFr,
         durationMin: m.durationMin,
-        jurisdiction: null, // home-care best practice — all provinces
+        jurisdiction,
+        regulatoryCitations,
         status: ModuleStatus.PUBLISHED,
         publishedAt: new Date(),
       },
@@ -129,12 +156,17 @@ async function main() {
     }
   }
 
-  const lessons = HOME_CARE_MODULES.reduce((n, m) => n + m.lessons.length, 0);
-  const questions = HOME_CARE_MODULES.reduce((n, m) => n + m.questions.length, 0);
-  // eslint-disable-next-line no-console
+  const lessons = ALL_MODULES.reduce((n, m) => n + m.lessons.length, 0);
+  const questions = ALL_MODULES.reduce((n, m) => n + m.questions.length, 0);
+  const blocked = ALL_MODULES.filter((m) => m.review?.blocker).length;
+  /* eslint-disable no-console */
   console.log(
-    `Seeded home-care starter library: ${roleCount} roles, ${HOME_CARE_MODULES.length} modules, ${lessons} lessons, ${questions} quiz questions.`,
+    `Seeded home-care starter library: ${roleCount} roles, ${ALL_MODULES.length} modules, ${lessons} lessons, ${questions} quiz questions.`,
   );
+  console.log(
+    `All ${ALL_MODULES.length} are STARTER CONTENT pending SME review; every fr-CA body is a machine draft pending bilingual QA. ${blocked} module(s) carry an explicit blocker — see Module.regulatoryCitations.review.blocker and docs/CONTENT_SOURCE_NOTES.md.`,
+  );
+  /* eslint-enable no-console */
 }
 
 main()

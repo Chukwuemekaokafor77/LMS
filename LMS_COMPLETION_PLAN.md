@@ -253,7 +253,7 @@ but it is not planned.
 > | Phase | State | Evidence |
 > |---|---|---|
 > | A — learning experience | ✅ done | [docs/UX_VERIFIED.md](docs/UX_VERIFIED.md) |
-> | B — content catalog | 🟡 partial | authoring UI + library-promote built; **11-module** bilingual **starter library** seeded (`seed:homecare`, 43 lessons / 41 quiz Qs), each lesson with a **readable EN/FR body** (real training, not just titles — `feat/academy-lesson-content`, 2026-08-01). **Remaining:** SME review before "compliance" use; more modules; BYO/produced videos; per-province role rows / policy sets |
+> | B — content catalog | 🟡 partial | authoring UI + library-promote built; **19-module** bilingual **starter library** seeded (`seed:homecare`, 79 lessons / 73 quiz Qs), each lesson with a **readable EN/FR body** (real training, not just titles — `feat/academy-lesson-content`, 2026-08-01; expanded to 19 on 2026-09-09). Every module now carries its sources + review state in `Module.regulatoryCitations`. **Remaining:** SME review before "compliance" use (nothing is launch-ready); fr-CA bilingual QA of every French body (all machine-drafted); WHO + WHMIS positioning decisions (docs/CONTENT_SOURCE_NOTES.md); BYO/produced videos; per-province policy sets |
 > | C — remove Clerk / federate | ✅ done | LMS-M6 complete: ElderCare Academy handoff SSO, Clerk deleted end-to-end (API + web), identity in ca-central-1 |
 > | D — certificate flow-back (+ entitlement) | ✅ done | Seam 3 both repos: completions upsert a verified, expiring `StaffCertification` in ElderCare; entitlement gate enforced at SSO (claims-based) **and mid-session** (2026-07-21 entitlement-lapse webhook, both repos — bullet 5 below) |
 > | E — go-live hardening | ⬜ remaining | see the Phase E checklist below — deployment/ops, needs owner decisions |
@@ -326,13 +326,17 @@ Module ids survive the round-trip, so assignments keep working.
 **Content model (owner decision 2026-07-20): BYO-first.** Agencies add their
 own content/materials via the authoring UI; a licensed catalog can be added
 post-revenue. A **home-care STARTER LIBRARY** ships as global modules (seed:
-`pnpm --filter @maple-care/api run seed:homecare`) — **11** bilingual
+`pnpm --filter @maple-care/api run seed:homecare`) — **19** bilingual
 best-practice modules (Home Support Fundamentals, Lone-Worker Safety, IPAC in
 the Home, Falls Prevention in the Home, Privacy & Confidentiality, Safe Travel
 Between Clients, Safe Lifting & Client Handling, Dementia & Responsive
 Behaviours, Medication Support in the Home, Recognizing & Reporting Abuse and
-Neglect, Working in the Client's Home: Boundaries/Family/Pets), **43 lessons +
-41 EN/FR quiz questions** (expanded from 6/23/21 on 2026-07-21). Each lesson now
+Neglect, Working in the Client's Home: Boundaries/Family/Pets, **+ Phase B
+2026-09-09:** Elder Care & Disability Care Basics, Convalescent Care Basics,
+Person-Centred Care, Client Communication, Documentation/Care Notes & Incident
+Reporting, Solo Emergency Response, WHMIS 2015 Awareness, and the NS CCA
+Competency Prep track), **79 lessons + 73 EN/FR quiz questions** (expanded from
+6/23/21 on 2026-07-21 and from 11/43/41 on 2026-09-09). Each lesson now
 ships a **readable EN/FR body** (2026-08-01, `feat/academy-lesson-content`), so a
 module is real training from day one — a learner reads the lesson and marks it
 complete, and that gates the quiz. Previously lessons had titles only, so a
@@ -340,9 +344,51 @@ content-pending module showed a bare "Start quiz" with nothing to learn (the
 vacuous `[].every()` unlock); the gate now counts a lesson as gating once it has
 a READY video **or** a body. **Starter/example only — SME review required before
 use as compliance; not marketed as provincially mandated** (see §B0). Lesson
-videos remain BYO and play above the same text once uploaded. Remaining Phase B
-work: SME review of the starter content, more modules, per-province role rows /
-policy sets.
+videos remain BYO and play above the same text once uploaded.
+
+**Content expansion 2026-09-09 (`content/starter-library-phase-b`).** Closed the
+layer-1 gap in the catalog architecture below and added the two items it implied
+but never had: WHMIS, and the NS CCA prep track (layer 2, the only
+province-scoped module — `jurisdiction: NS`). Every EN body is **written from
+scratch against verified sources; nothing is reproduced or adapted**, because the
+good Canadian sources don't permit it (CCOHS needs prior permission and forbids
+edits; PHO is non-commercial-only; the NS CCA framework is All-Rights-Reserved;
+the BC HCA OER is a **non-commercial** CC variant, *not* CC BY 4.0). Sources +
+review state are seeded into `Module.regulatoryCitations` as `{ sources, review }`
+so the disclaimer travels with the row.
+
+**Nothing from that expansion is launch-ready — it is a first draft for review.**
+Open items, all tracked in [docs/CONTENT_SOURCE_NOTES.md](docs/CONTENT_SOURCE_NOTES.md):
+- **SME review of all 19 modules.** 4 are ORIGINAL authoring with no adequate
+  free Canadian source (Solo Emergency Response, Medication Support,
+  Documentation, Working in the Client's Home) and are tagged more
+  conservatively than the sourced ones.
+- **fr-CA bilingual QA of every French body** — all machine-drafted, flagged
+  `MACHINE-DRAFTED — PENDING HUMAN BILINGUAL QA`. This *is* Phase E's open item.
+- ~~WHO iSupport permission~~ — **closed 2026-09-09: dropped by owner decision.**
+  CC BY-NC-SA 3.0 IGO; no permission sought and none will be. Nothing was drafted
+  from it, so no content changed — but the dementia module's remaining depth now
+  has to come from an SME. The BC non-commercial HCA OER and the unverifiable
+  2010 NICE factsheet were dropped in the same pass; a guard keeps all three out.
+- **WHMIS** — sourcing closed 2026-09-09: free government sources exist
+  (Health Canada, ESDC, and the WCB PEI guide from a launch province), so the
+  module is re-sourced onto those and no longer routes agencies to a paid
+  vendor course. Positioning is still open: WHMIS is the one genuine legal duty
+  in the library, and the module covers the *education* half only — the agency
+  still owes workplace- and product-specific *training*.
+- **Both BCcampus HCA OERs dropped** 2026-09-09 (one non-commercial, one viral
+  ShareAlike). `convalescent-care-basics` lost its last substantive source and
+  was reclassified SOURCED → ORIGINAL rather than left overstating its backing.
+- ~~Seeding status~~ — **closed 2026-09-09: keep `PUBLISHED`.** The starter
+  library is meant to be there by default; `DRAFT` would empty it in the demo
+  and prospect environments. The `STARTER CONTENT` tag is the mitigation.
+  **Follow-on, still open:** that tag is not rendered anywhere —
+  `regulatoryCitations` reaches the `getBySlug` payload only via an object
+  spread, `listForOrg` omits it, and no web code reads it. So the mitigation
+  for publishing unreviewed content is currently invisible to learners and
+  admins alike (docs/CONTENT_SOURCE_NOTES.md §4b).
+- Still outstanding from before: BYO/produced videos, per-province role rows /
+  policy sets.
 - For each module: lesson videos (Mux), bilingual titles/descriptions, a quiz with
   bilingual prompts/choices/explanations, regulatory citations JSON, `passMark`.
 - This is content/SME work with an admin-authoring UI assist. Decide build-vs-license
