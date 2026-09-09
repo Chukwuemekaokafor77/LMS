@@ -19,7 +19,13 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./test/setup.ts"],
-    include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
+    // prisma/*.spec.ts holds the pure-data guards for the seeded starter
+    // library (no DB, no Nest app) — they live next to the content they guard.
+    include: [
+      "src/**/*.spec.ts",
+      "prisma/**/*.spec.ts",
+      "test/**/*.e2e-spec.ts",
+    ],
     // The integration/e2e suites share one Postgres and wipe+seed it, so they
     // must not run concurrently or they clobber each other's fixtures. Run files
     // serially (tests within a file already run sequentially).
