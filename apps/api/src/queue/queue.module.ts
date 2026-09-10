@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
+import { redisConnectionFromUrl } from "../redis/redis-connection";
 
 export const QUEUES = {
   email: "email",
@@ -22,23 +23,10 @@ export const QUEUES = {
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const url = config.getOrThrow<string>("REDIS_URL");
-        const u = new URL(url);
-        // rediss:// (DO Managed Valkey and the like) requires TLS. Because we
-        // pass host/port to ioredis rather than the URL, TLS must be enabled
-        // explicitly. rejectUnauthorized:false mirrors the Postgres
-        // sslmode=require posture used against the same DO cluster family
-        // (encrypt in-transit; the managed cert isn't in Node's CA bundle).
-        const tls =
-          u.protocol === "rediss:" ? { tls: { rejectUnauthorized: false } } : {};
-        return {
-          connection: {
-            host: u.hostname,
-            port: Number(u.port || 6379),
-            username: u.username ? decodeURIComponent(u.username) : undefined,
-            password: u.password ? decodeURIComponent(u.password) : undefined,
-            ...tls,
-          },
-        };
+        // Shared with the Redis health indicator on purpose. A health check
+        // that connects differently from the queue is worse than none: it goes
+        // green while the queue is down, or red while the queue is fine.
+        return { connection: redisConnectionFromUrl(url) };
       },
     }),
     BullModule.registerQueue(
