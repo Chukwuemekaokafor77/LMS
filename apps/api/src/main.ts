@@ -41,4 +41,11 @@ async function bootstrap() {
   console.log(`[api] listening on http://localhost:${port}`);
 }
 
-bootstrap();
+// An unhandled rejection out of bootstrap() exits the process with no useful
+// output — which is how a Redis-blocked startup presented on 2026-09-09: the
+// container simply never bound :4000 and the readiness probe reported a bare
+// "connection refused". Fail loudly instead.
+bootstrap().catch((err) => {
+  console.error("[api] fatal: failed to start", err);
+  process.exit(1);
+});
